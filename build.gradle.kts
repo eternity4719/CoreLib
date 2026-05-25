@@ -49,7 +49,7 @@ tasks {
         minecraftVersion("1.21")
     }
     shadowJar {
-//        relocate("com.tcoded.folialib", "me.albert.elimiter.libs.folialib")
+        relocate("com.tcoded.folialib", "me.albert.core.folialib")
     }
 }
 
