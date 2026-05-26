@@ -3,3 +3,6 @@ version: '1.0.0'
 main: me.albert.corelib.CoreLib
 api-version: '1.13'
 folia-supported: true
+commands:
+  corelib:
+    permission: admin

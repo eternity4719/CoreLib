@@ -39,6 +39,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("com.tcoded:FoliaLib:0.5.1")
+    implementation("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+
+    implementation("com.zaxxer:HikariCP:5.1.0")
 }
 
 tasks {
