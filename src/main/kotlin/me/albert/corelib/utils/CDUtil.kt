@@ -1,12 +1,17 @@
 package me.albert.corelib.utils
 
 import org.bukkit.Bukkit
+import org.bukkit.entity.Entity
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 
 fun UUID.checkCD(key: String, time: Long): Long {
     return CDUtil.isInCd(this, key, time)
+}
+
+fun Entity.checkCD(key: String, time: Long): Long {
+    return this.uniqueId.checkCD(key, time)
 }
 
 object CDUtil {
