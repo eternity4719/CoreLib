@@ -24,7 +24,7 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"]) // Java 项目，或 components["kotlin"] 对于 Kotlin Multiplatform
-            artifactId = "elimiter"
+            artifactId = "corelib"
         }
     }
 
@@ -36,10 +36,10 @@ publishing {
 
 dependencies {
     paperweight.foliaDevBundle("26.1.2.build.+")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("com.tcoded:FoliaLib:0.5.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    api("com.tcoded:FoliaLib:0.5.1")
+    api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
 
     implementation("com.zaxxer:HikariCP:5.1.0")
 }

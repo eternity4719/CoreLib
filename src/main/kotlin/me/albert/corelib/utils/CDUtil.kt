@@ -4,13 +4,18 @@ import org.bukkit.Bukkit
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+
+fun UUID.checkCD(key: String, time: Long): Long {
+    return CDUtil.isInCd(this, key, time)
+}
+
 object CDUtil {
 
     // 所有的冷却数据
     val cds: ConcurrentHashMap<UUID, ConcurrentHashMap<String, Long>> = ConcurrentHashMap()
 
     // 内部管理免 CD 的玩家集合（使用 ConcurrentHashMap.newKeySet() 保证多线程并发安全）
-    private val noCdPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
+    val noCdPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
     /**
      * 检查并处理玩家冷却
