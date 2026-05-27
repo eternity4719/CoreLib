@@ -46,10 +46,10 @@ dependencies {
     api("com.tcoded:FoliaLib:0.5.1")
     api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
     // Vault API
-    api("com.github.MilkBowl:VaultAPI:1.7.1")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
 
     // PlayerPoints API (使用 CodeMC 仓库的最新常见版本，以 3.2.7 为例)
-    api("org.black_ixx:playerpoints:3.2.7")
+    compileOnly("org.black_ixx:playerpoints:3.2.7")
     api("com.zaxxer:HikariCP:5.1.0")
 }
 
