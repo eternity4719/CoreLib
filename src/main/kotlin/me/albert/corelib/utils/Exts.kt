@@ -31,6 +31,11 @@ val gson = Gson()
 
 val air = ItemStack(Material.AIR)
 
+var prefix = "§7[§b系统§7] §a"
+
+val String.prefixed: String get() = prefix + this.bukkit
+
+
 val ItemStack?.isNull: Boolean
     get() {
         return (this == null || this.isEmpty)
