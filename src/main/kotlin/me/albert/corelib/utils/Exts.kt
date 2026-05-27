@@ -3,7 +3,6 @@ package me.albert.corelib.utils
 import com.google.gson.Gson
 import me.albert.corelib.instance
 import org.bukkit.Location
-import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
@@ -37,7 +36,7 @@ fun ItemStack?.checkName(name: String): Boolean =
     checkItemDisplayName(this, name.bukkit.trim())
 
 fun ItemStack?.checkNames(vararg names: String): Boolean {
-    if (this == null || type == Material.AIR) return false
+    if (this == null || isEmpty) return false
     val meta = itemMeta ?: return false
     if (!meta.hasDisplayName()) return false
     val currentName = meta.displayName
@@ -53,7 +52,7 @@ fun Entity.checkMainHand(vararg name: String): Boolean {
 }
 
 fun checkItemDisplayName(item: ItemStack?, display: String): Boolean {
-    if (item == null || item.type == Material.AIR) return false
+    if (item == null || item.isEmpty) return false
     val meta = item.itemMeta ?: return false
     return meta.hasDisplayName() && meta.displayName.equals(display, ignoreCase = true)
 }
@@ -67,7 +66,7 @@ fun JavaPlugin.registerEvents(listener: Listener) {
  * 优化点：只进行 1 次 ItemMeta 深拷贝，使用原生 substring 避免多余的临时字符串对象生成
  */
 fun ItemStack?.getLoreAttributeValue(str: String): Double {
-    if (this == null || type == Material.AIR) return -1.0
+    if (this == null || isEmpty) return -1.0
     val meta = itemMeta ?: return -1.0
     val lore = meta.lore ?: return -1.0
 
@@ -88,7 +87,7 @@ fun ItemStack?.getLoreAttributeValue(str: String): Double {
  * 优化点：无属性变更时绝对不写回 ItemMeta，避免大服高频受击/刷新属性时主线程卡顿
  */
 fun ItemStack?.setLoreAttribute(str: String, value: Double) {
-    if (this == null || type == Material.AIR) return
+    if (this == null || isEmpty) return
     val meta = itemMeta ?: return
     val lore = meta.lore ?: return
 
