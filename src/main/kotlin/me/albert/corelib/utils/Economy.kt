@@ -5,6 +5,7 @@ import net.milkbowl.vault.economy.Economy
 import org.black_ixx.playerpoints.PlayerPoints
 import org.black_ixx.playerpoints.PlayerPointsAPI
 import org.bukkit.Bukkit
+import org.bukkit.OfflinePlayer
 import java.util.*
 
 object EconomyManager {
@@ -95,3 +96,31 @@ fun UUID.givePoints(amount: Int): Boolean = EconomyManager.givePoints(this, amou
 
 /** 扣除玩家点券 */
 fun UUID.takePoints(amount: Int): Boolean = EconomyManager.takePoints(this, amount)
+
+
+// ==========================================
+// Vault (游戏币) 拓展函数
+// ==========================================
+
+/** 获取玩家游戏币余额 */
+fun OfflinePlayer.getMoney(): Double = EconomyManager.getMoney(uniqueId)
+
+/** 给予玩家游戏币 */
+fun OfflinePlayer.giveMoney(amount: Double): Boolean = EconomyManager.giveMoney(uniqueId, amount)
+
+/** 扣除玩家游戏币 */
+fun OfflinePlayer.takeMoney(amount: Double): Boolean = EconomyManager.takeMoney(uniqueId, amount)
+
+
+// ==========================================
+// PlayerPoints (点券) 拓展函数
+// ==========================================
+
+/** 获取玩家点券余额 */
+fun OfflinePlayer.getPoints(): Int = EconomyManager.getPoints(uniqueId)
+
+/** 给予玩家点券 */
+fun OfflinePlayer.givePoints(amount: Int): Boolean = EconomyManager.givePoints(uniqueId, amount)
+
+/** 扣除玩家点券 */
+fun OfflinePlayer.takePoints(amount: Int): Boolean = EconomyManager.takePoints(uniqueId, amount)
