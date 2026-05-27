@@ -75,7 +75,7 @@ object EconomyManager {
 // ==========================================
 
 /** 获取玩家游戏币余额 */
-fun UUID.getMoney(): Double = EconomyManager.getMoney(this)
+val UUID.money: Double get() = EconomyManager.getMoney(this)
 
 /** 给予玩家游戏币 */
 fun UUID.giveMoney(amount: Double): Boolean = EconomyManager.giveMoney(this, amount)
@@ -89,7 +89,7 @@ fun UUID.takeMoney(amount: Double): Boolean = EconomyManager.takeMoney(this, amo
 // ==========================================
 
 /** 获取玩家点券余额 */
-fun UUID.getPoints(): Int = EconomyManager.getPoints(this)
+val UUID.points: Int get() = EconomyManager.getPoints(this)
 
 /** 给予玩家点券 */
 fun UUID.givePoints(amount: Int): Boolean = EconomyManager.givePoints(this, amount)
@@ -102,8 +102,6 @@ fun UUID.takePoints(amount: Int): Boolean = EconomyManager.takePoints(this, amou
 // Vault (游戏币) 拓展函数
 // ==========================================
 
-/** 获取玩家游戏币余额 */
-fun OfflinePlayer.getMoney(): Double = EconomyManager.getMoney(uniqueId)
 
 /** 给予玩家游戏币 */
 fun OfflinePlayer.giveMoney(amount: Double): Boolean = EconomyManager.giveMoney(uniqueId, amount)
@@ -117,10 +115,14 @@ fun OfflinePlayer.takeMoney(amount: Double): Boolean = EconomyManager.takeMoney(
 // ==========================================
 
 /** 获取玩家点券余额 */
-fun OfflinePlayer.getPoints(): Int = EconomyManager.getPoints(uniqueId)
+
 
 /** 给予玩家点券 */
 fun OfflinePlayer.givePoints(amount: Int): Boolean = EconomyManager.givePoints(uniqueId, amount)
 
 /** 扣除玩家点券 */
 fun OfflinePlayer.takePoints(amount: Int): Boolean = EconomyManager.takePoints(uniqueId, amount)
+
+val OfflinePlayer.points: Int get() = uniqueId.points
+
+val OfflinePlayer.money: Double get() = uniqueId.money
