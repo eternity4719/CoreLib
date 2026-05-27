@@ -3,6 +3,7 @@ package me.albert.corelib.utils
 import com.google.gson.Gson
 import me.albert.corelib.instance
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
@@ -27,6 +28,13 @@ val String.rBukkit: String
     get() = if (contains('§')) this.replace("§", "&") else this
 
 val gson = Gson()
+
+val air = ItemStack(Material.AIR)
+
+val ItemStack?.isNull: Boolean
+    get() {
+        return (this == null || this.isEmpty)
+    }
 
 /* =========================================================================
  * 2. 物品名校验与 RPG Lore 属性解析 (性能大幅优化版)
