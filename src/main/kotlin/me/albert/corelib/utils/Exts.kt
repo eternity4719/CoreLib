@@ -5,6 +5,7 @@ import me.albert.corelib.instance
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.event.Listener
@@ -34,6 +35,10 @@ val air = ItemStack(Material.AIR)
 var prefix = "§7[§b系统§7] §a"
 
 val String.prefixed: String get() = prefix + this.bukkit
+
+fun CommandSender.sendMsg(msg: String) {
+    this.sendMessage(msg.prefixed)
+}
 
 
 val ItemStack?.isNull: Boolean
