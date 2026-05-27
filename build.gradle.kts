@@ -67,6 +67,11 @@ tasks {
 
 val targetJavaVersion = 25
 
+java {
+    // 关键：必须加上这行，发布时才会生成并附带源码！
+    withSourcesJar()
+}
+
 kotlin {
     jvmToolchain(targetJavaVersion)
 }
