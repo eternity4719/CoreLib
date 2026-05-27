@@ -6,10 +6,12 @@ import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
+import org.bukkit.event.Listener
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.MetadataValue
 import org.bukkit.metadata.Metadatable
+import org.bukkit.plugin.java.JavaPlugin
 import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -52,6 +54,10 @@ fun checkItemDisplayName(item: ItemStack?, display: String): Boolean {
     if (item == null || item.type == Material.AIR) return false
     val meta = item.itemMeta ?: return false
     return meta.hasDisplayName() && meta.displayName.equals(display, ignoreCase = true)
+}
+
+fun JavaPlugin.registerEvents(listener: Listener) {
+    server.pluginManager.registerEvents(listener, this)
 }
 
 /**
