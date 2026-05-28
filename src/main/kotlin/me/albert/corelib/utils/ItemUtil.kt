@@ -19,8 +19,8 @@ object ItemUtil {
     ): ItemStack = item.apply {
         // executeIfMetaPresent 或直接用 Bukkit 的 editMeta (1.18.2+)
         editMeta { meta ->
-            meta.setDisplayName(name)
-            meta.lore = lore
+            meta.setDisplayName(name.bukkit)
+            meta.lore = lore.map { it?.bukkit }
         }
     }
 
@@ -52,7 +52,7 @@ object ItemUtil {
         editMeta { meta ->
             val currentLore = meta.lore ?: ArrayList()
             currentLore.addAll(lore)
-            meta.lore = currentLore
+            meta.lore = currentLore.map { it?.bukkit }
         }
     }
 
