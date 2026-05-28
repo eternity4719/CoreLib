@@ -32,6 +32,7 @@ val String.rBukkit: String
 val gson = Gson()
 
 val air = ItemStack(Material.AIR)
+val stone = ItemStack(Material.STONE)
 
 var prefix = "§7[§b系统§7] §a"
 
