@@ -112,16 +112,6 @@ class GuiManager(plugin: JavaPlugin) : Listener {
         holder.onClick?.invoke(event)
     }
 
-//    @EventHandler(priority = EventPriority.HIGHEST,ignoreCancelled = true)
-//    fun onMove(event: InventoryDragEvent) {
-//
-//        val holder = event.view.topInventory.holder as? GuiHolder ?: return
-//
-//        if (!holder.allowEmptyClick) {
-//            event.isCancelled = true
-//        }
-//    }
-
     @EventHandler
     fun onInventoryClose(event: InventoryCloseEvent) {
         val holder = event.inventory.holder as? GuiHolder ?: return
