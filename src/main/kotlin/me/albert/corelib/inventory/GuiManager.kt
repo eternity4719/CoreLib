@@ -1,11 +1,16 @@
 package me.albert.corelib.inventory
 
+import me.albert.corelib.utils.bukkit
+import me.albert.corelib.utils.isNull
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.event.inventory.InventoryAction
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.inventory.Inventory
+import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -16,12 +21,14 @@ class GuiItem(
 )
 
 // 2. DSL 构造器
-class GuiBuilder(val title: String, val size: Int) {
-    private val slots = mutableMapOf<Int, GuiItem>()
-    private var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
+class GuiHolder(val title: String, val size: Int) : InventoryHolder {
+    val slots = mutableMapOf<Int, GuiItem>()
+    var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
 
     // 新增：是否允许在空白格乱放/操作东西，默认不运行 (false)
-    private var allowEmptyClick = false
+    var allowEmptyClick = false
+    var onClick: ((InventoryClickEvent) -> Unit)? = null
+    var onItemClick: ((InventoryClickEvent) -> Unit)? = null
 
     /**
      * 在指定位置放置物品并设置监听器
@@ -33,6 +40,14 @@ class GuiBuilder(val title: String, val size: Int) {
         slots[slot] = GuiItem(item, onClick)
     }
 
+    fun onClick(listener: (InventoryClickEvent) -> Unit) {
+        onClick = listener
+    }
+
+    fun onItemClick(listener: (InventoryClickEvent) -> Unit) {
+        onItemClick = listener
+    }
+
     /**
      * 监听背包关闭事件
      */
@@ -40,39 +55,23 @@ class GuiBuilder(val title: String, val size: Int) {
         onCloseAction = action
     }
 
-    /**
-     * 新增：设置是否允许玩家在空白格交互（放入物品、点击空格等）
-     * @param allow true 为允许，false 为拦截（默认）
-     */
-    fun allowEmptySlot(allow: Boolean) {
-        this.allowEmptyClick = allow
-    }
-
     // 构建出最终的 Inventory 并绑定数据
     fun build(): Inventory {
-        // 将 allowEmptyClick 传入 Holder
-        val holder = GuiHolder(slots, allowEmptyClick, onCloseAction)
-
-        val customInventory = Bukkit.createInventory(holder, size, title)
+        val customInventory = Bukkit.createInventory(this, size, title)
         slots.forEach { (slot, guiItem) ->
             customInventory.setItem(slot, guiItem.itemStack)
         }
         return customInventory
     }
-}
 
-// 3. 自定义 Holder 用于在事件中识别和获取当前 GUI 的配置
-class GuiHolder(
-    val slots: Map<Int, GuiItem>,
-    val allowEmptyClick: Boolean, // 新增属性
-    val onCloseAction: ((InventoryCloseEvent) -> Unit)?
-) : org.bukkit.inventory.InventoryHolder {
-    override fun getInventory(): Inventory = Bukkit.createInventory(this, 9)
+    override fun getInventory(): Inventory {
+        return Bukkit.createInventory(null, size, title)
+    }
 }
 
 // 顶层扩展函数，方便随时随地创建 GUI
-fun createGui(title: String, size: Int, block: GuiBuilder.() -> Unit): Inventory {
-    return GuiBuilder(title, size).apply(block).build()
+fun createGui(title: String, size: Int, block: GuiHolder.() -> Unit): Inventory {
+    return GuiHolder(title.bukkit, size).apply(block).build()
 }
 
 
@@ -83,29 +82,45 @@ class GuiManager(plugin: JavaPlugin) : Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin)
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun onInventoryClick(event: InventoryClickEvent) {
         val holder = event.inventory.holder as? GuiHolder ?: return
 
-        // 如果点击的是玩家自己的背包底栏，且不是处于该自定义GUI的交互中，可以不作处理
-        if (event.rawSlot >= event.inventory.size) return
+
+        if (event.action == InventoryAction.MOVE_TO_OTHER_INVENTORY && !holder.allowEmptyClick) {
+            event.isCancelled = true
+        }
+
+        if (event.clickedInventory?.holder !is GuiHolder) {
+            return
+        }
+
+        if (!holder.allowEmptyClick) {
+            event.isCancelled = true
+        }
+
 
         val guiItem = holder.slots[event.slot]
 
         if (guiItem != null) {
-            if (guiItem.onClick != null) {
-                event.isCancelled = true // 阻止默认的移动行为
-                guiItem.onClick(event) // 执行自定义逻辑
-            } else {
-                // 监听函数为 null，允许移动该物品 (不取消事件)
-            }
-        } else {
-            // 修改点：根据配置决定是否拦截空白格的乱放/点击行为
-            if (!holder.allowEmptyClick) {
-                event.isCancelled = true
-            }
+            event.isCancelled = true
+            guiItem.onClick?.invoke(event) // 执行自定义逻辑
         }
+        if (!event.currentItem.isNull) {
+            holder.onItemClick?.invoke(event)
+        }
+        holder.onClick?.invoke(event)
     }
+
+//    @EventHandler(priority = EventPriority.HIGHEST,ignoreCancelled = true)
+//    fun onMove(event: InventoryDragEvent) {
+//
+//        val holder = event.view.topInventory.holder as? GuiHolder ?: return
+//
+//        if (!holder.allowEmptyClick) {
+//            event.isCancelled = true
+//        }
+//    }
 
     @EventHandler
     fun onInventoryClose(event: InventoryCloseEvent) {
