@@ -9,6 +9,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.inventory.InventoryAction
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
+import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
@@ -30,6 +31,7 @@ class GuiHolder(val title: String, val size: Int) : InventoryHolder {
     var allowEmptyClick = false
     var onClick: ((InventoryClickEvent) -> Unit)? = null
     var onItemClick: ((InventoryClickEvent) -> Unit)? = null
+    var onOpen: ((InventoryOpenEvent) -> Unit)? = null
 
     /**
      * 在指定位置放置物品并设置监听器
@@ -47,6 +49,10 @@ class GuiHolder(val title: String, val size: Int) : InventoryHolder {
 
     fun onItemClick(listener: (InventoryClickEvent) -> Unit) {
         onItemClick = listener
+    }
+
+    fun onOpen(listener: (InventoryOpenEvent) -> Unit) {
+        onOpen = listener
     }
 
     /**
@@ -112,9 +118,15 @@ class GuiManager(plugin: JavaPlugin) : Listener {
         holder.onClick?.invoke(event)
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onInventoryClose(event: InventoryCloseEvent) {
         val holder = event.inventory.holder as? GuiHolder ?: return
         holder.onCloseAction?.invoke(event)
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    fun onOpen(event: InventoryOpenEvent) {
+        val holder = event.inventory.holder as? GuiHolder ?: return
+        holder.onOpen?.invoke(event)
     }
 }
