@@ -24,6 +24,7 @@ class GuiItem(
 class GuiHolder(val title: String, val size: Int) : InventoryHolder {
     val slots = mutableMapOf<Int, GuiItem>()
     var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
+    val customInventory = Bukkit.createInventory(this, size, title)
 
     // 新增：是否允许在空白格乱放/操作东西，默认不运行 (false)
     var allowEmptyClick = false
@@ -57,7 +58,6 @@ class GuiHolder(val title: String, val size: Int) : InventoryHolder {
 
     // 构建出最终的 Inventory 并绑定数据
     fun build(): Inventory {
-        val customInventory = Bukkit.createInventory(this, size, title)
         slots.forEach { (slot, guiItem) ->
             customInventory.setItem(slot, guiItem.itemStack)
         }
@@ -65,7 +65,7 @@ class GuiHolder(val title: String, val size: Int) : InventoryHolder {
     }
 
     override fun getInventory(): Inventory {
-        return Bukkit.createInventory(null, size, title)
+        return customInventory
     }
 }
 
