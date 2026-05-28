@@ -8,6 +8,7 @@ import org.bukkit.Sound
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
+import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
@@ -156,6 +157,10 @@ fun Location.playSound(sound: Sound, volume: Float, pitch: Float) {
 
 fun Location.dropItem(item: ItemStack) {
     world?.dropItem(this, item)
+}
+
+fun Player.playSound(sound: Sound, volume: Float, pitch: Float) {
+    this.playSound(this, sound, volume, pitch)
 }
 
 
