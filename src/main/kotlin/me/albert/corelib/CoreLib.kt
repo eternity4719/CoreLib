@@ -9,7 +9,6 @@ import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
-import java.util.*
 
 lateinit var instance: CoreLib
 
@@ -32,41 +31,33 @@ class CoreLib : JavaPlugin() {
             sender.sendMessage("§c你没有权限执行此指令！")
             return true
         }
+        when (args.size) {
+            2 -> {
+                val subCmd = args[0].lowercase()
+                when (subCmd) {
+                    "nocd" -> {
+                        val targetName = args[1]
+                        val targetUUID = PlayerNameUtil.getUUID(targetName)
 
-        if (args.isEmpty()) {
-            sendHelp(sender, label)
-            return true
-        }
+                        if (targetUUID == null) {
+                            sender.sendMessage("§c未找到玩家 $targetName")
+                            return true
+                        }
 
-        when (args[0].lowercase(Locale.ROOT)) {
-            "nocd" -> {
-                if (args.size < 2) {
-                    sender.sendMessage("§c用法: /$label nocd <玩家名>")
-                    return true
+                        // 切换免 CD 状态
+                        if (CDUtil.isNoCd(targetUUID)) {
+                            CDUtil.removeNoCdUUID(targetUUID)
+                            sender.sendMessage("§a[CoreLib] 已§c关闭§a 玩家 §e$targetName §a的免冷却特权。")
+                            return true
+                        }
+                        CDUtil.addNoCdUUID(targetUUID)
+                        sender.sendMessage("§a[CoreLib] 已§b开启§a 玩家 §e$targetName §a的免冷却特权！")
+                        return true
+                    }
                 }
-
-                val targetName = args[1]
-                val targetUUID = PlayerNameUtil.getUUID(targetName)
-
-                if (targetUUID == null) {
-                    sender.sendMessage("§c未找到玩家 $targetName")
-                    return true
-                }
-
-                // 切换免 CD 状态
-                if (CDUtil.isNoCd(targetUUID)) {
-                    CDUtil.removeNoCdUUID(targetUUID)
-                    sender.sendMessage("§a[CoreLib] 已§c关闭§a 玩家 §e$targetName §a的免冷却特权。")
-                    return true
-                }
-                CDUtil.addNoCdUUID(targetUUID)
-                sender.sendMessage("§a[CoreLib] 已§b开启§a 玩家 §e$targetName §a的免冷却特权！")
-                return true
-
             }
-
-            else -> sendHelp(sender, label)
         }
+        sendHelp(sender, label)
         return true
     }
 
