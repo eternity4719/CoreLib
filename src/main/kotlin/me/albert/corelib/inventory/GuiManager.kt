@@ -22,7 +22,7 @@ class GuiItem(
 )
 
 // 2. DSL 构造器
-class GuiHolder(val title: String, val size: Int) : InventoryHolder {
+class GuiHolder(title: String, size: Int) : InventoryHolder {
     val slots = mutableMapOf<Int, GuiItem>()
     var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
     val customInventory = Bukkit.createInventory(this, size, title)
