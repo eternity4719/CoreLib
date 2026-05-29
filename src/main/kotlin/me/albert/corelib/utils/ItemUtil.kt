@@ -4,7 +4,6 @@ import org.bukkit.Material
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.inventory.ItemStack
 import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 object ItemUtil {
 
@@ -63,15 +62,14 @@ object ItemUtil {
 
     /* ================= 序列化部分 (现代化高效 NBT 字节码) ================= */
 
-    @OptIn(ExperimentalEncodingApi::class)
+
     fun itemToString(itemStack: ItemStack): String {
         // 使用 Base64.Default，避免部分老版本平台由于 NBT 过大产生换行符导致数据库/配置断行
-        return Base64.Default.encode(itemStack.serializeAsBytes())
+        return Base64.encode(itemStack.serializeAsBytes())
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
     fun stringToItem(stringBlob: String): ItemStack {
-        return ItemStack.deserializeBytes(Base64.Default.decode(stringBlob))
+        return ItemStack.deserializeBytes(Base64.decode(stringBlob))
     }
 
     /* ================= 旧版兼容序列化 (Yaml 字符串) ================= */
@@ -88,4 +86,51 @@ object ItemUtil {
         return config.getItemStack("item")!!
     }
 }
+
+/* ================= 构造 ================= */
+
+/** 用 Material 直接构造一个带名字和 lore 的 ItemStack */
+fun itemOf(material: Material, name: String, lore: List<String?> = emptyList()): ItemStack =
+    ItemStack(material).withName(name, lore)
+
+fun itemOf(material: Material, name: String, vararg lore: String): ItemStack =
+    ItemStack(material).withName(name, lore.toList())
+
+/* ================= 名字 / Lore ================= */
+
+/** 设置显示名，可选地同时覆盖 lore */
+fun ItemStack.withName(name: String, lore: List<String?> = emptyList()): ItemStack = apply {
+    editMeta { meta ->
+        meta.setDisplayName(name.bukkit)
+        if (lore.isNotEmpty()) {
+            meta.lore = lore.map { it?.bukkit }
+        }
+    }
+}
+
+/** 覆盖式设置 lore */
+fun ItemStack.withLore(lore: List<String?>): ItemStack = apply {
+    editMeta { it.lore = lore.map { l -> l?.bukkit } }
+}
+
+fun ItemStack.withLore(vararg lore: String): ItemStack = withLore(lore.toList())
+
+/** 在原有 lore 末尾追加 */
+fun ItemStack.appendLore(lore: List<String?>): ItemStack = apply {
+    editMeta { meta ->
+        val current = meta.lore ?: ArrayList()
+        current.addAll(lore.map { it?.bukkit })
+        meta.lore = current
+    }
+}
+
+fun ItemStack.appendLore(vararg lore: String): ItemStack = appendLore(lore.toList())
+
+/* ================= 序列化 ================= */
+
+/** 新版 Base64 序列化（推荐） */
+fun ItemStack.toBase64(): String = Base64.encode(serializeAsBytes())
+
+fun String.toItemStack(): ItemStack = ItemStack.deserializeBytes(Base64.decode(this))
+
 
