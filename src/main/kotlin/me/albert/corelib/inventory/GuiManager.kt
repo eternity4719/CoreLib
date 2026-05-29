@@ -6,10 +6,7 @@ import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
-import org.bukkit.event.inventory.InventoryAction
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.InventoryCloseEvent
-import org.bukkit.event.inventory.InventoryOpenEvent
+import org.bukkit.event.inventory.*
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
@@ -27,8 +24,8 @@ class GuiHolder(title: String, size: Int) : InventoryHolder {
     var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
     val customInventory = Bukkit.createInventory(this, size, title)
 
-    // 新增：是否允许在空白格乱放/操作东西，默认不运行 (false)
-    var allowEmptyClick = false
+
+    var allowInteract = false
     var onClick: ((InventoryClickEvent) -> Unit)? = null
     var onItemClick: ((InventoryClickEvent) -> Unit)? = null
     var onOpen: ((InventoryOpenEvent) -> Unit)? = null
@@ -92,16 +89,22 @@ class GuiManager(plugin: JavaPlugin) : Listener {
     fun onInventoryClick(event: InventoryClickEvent) {
         val holder = event.inventory.holder as? GuiHolder ?: return
 
+        when (event.action) {
+            InventoryAction.COLLECT_TO_CURSOR,
+            InventoryAction.MOVE_TO_OTHER_INVENTORY -> {
+                if (!holder.allowInteract) {
+                    event.isCancelled = true
+                }
+            }
 
-        if (event.action == InventoryAction.MOVE_TO_OTHER_INVENTORY && !holder.allowEmptyClick) {
-            event.isCancelled = true
+            else -> {}
         }
 
         if (event.clickedInventory?.holder !is GuiHolder) {
             return
         }
 
-        if (!holder.allowEmptyClick) {
+        if (!holder.allowInteract) {
             event.isCancelled = true
         }
 
@@ -116,6 +119,16 @@ class GuiManager(plugin: JavaPlugin) : Listener {
             holder.onItemClick?.invoke(event)
         }
         holder.onClick?.invoke(event)
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    fun onInventoryDrag(event: InventoryDragEvent) {
+        val holder = event.inventory.holder as? GuiHolder ?: return
+        if (holder.allowInteract) return
+        // 只要拖拽涉及到 GUI 的格子就取消
+        if (event.rawSlots.any { it < event.view.topInventory.size }) {
+            event.isCancelled = true
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
