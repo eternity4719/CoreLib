@@ -21,7 +21,7 @@ class GuiItem(
 // 2. DSL 构造器
 class GuiHolder(title: String, size: Int) : InventoryHolder {
     val slots = mutableMapOf<Int, GuiItem>()
-    var onCloseAction: ((InventoryCloseEvent) -> Unit)? = null
+    var onClose: ((InventoryCloseEvent) -> Unit)? = null
     val customInventory = Bukkit.createInventory(this, size, title)
 
 
@@ -56,7 +56,7 @@ class GuiHolder(title: String, size: Int) : InventoryHolder {
      * 监听背包关闭事件
      */
     fun onClose(action: (InventoryCloseEvent) -> Unit) {
-        onCloseAction = action
+        onClose = action
     }
 
     // 构建出最终的 Inventory 并绑定数据
@@ -134,7 +134,7 @@ class GuiManager(plugin: JavaPlugin) : Listener {
     @EventHandler(ignoreCancelled = true)
     fun onInventoryClose(event: InventoryCloseEvent) {
         val holder = event.inventory.holder as? GuiHolder ?: return
-        holder.onCloseAction?.invoke(event)
+        holder.onClose?.invoke(event)
     }
 
     @EventHandler(ignoreCancelled = true)
