@@ -42,6 +42,10 @@ fun CommandSender.sendMsg(msg: String) {
     this.sendMessage(msg.prefixed)
 }
 
+fun ItemStack?.isSame(other: ItemStack?): Boolean {
+    return this?.isSimilar(other) == true && this.amount == other?.amount
+}
+
 
 val ItemStack?.isNull: Boolean
     get() {
