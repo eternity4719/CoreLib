@@ -1,7 +1,6 @@
 package me.albert.corelib
 
-import com.tcoded.folialib.FoliaLib
-import com.tcoded.folialib.impl.PlatformScheduler
+
 import me.albert.corelib.inventory.GuiManager
 import me.albert.corelib.utils.CDUtil
 import me.albert.corelib.utils.PlayerNameUtil
@@ -12,16 +11,12 @@ import org.bukkit.plugin.java.JavaPlugin
 
 lateinit var instance: CoreLib
 
-lateinit var foliaLib: FoliaLib
-
-val scheduler: PlatformScheduler get() = foliaLib.scheduler
 
 class CoreLib : JavaPlugin() {
 
 
     override fun onEnable() {
         instance = this
-        foliaLib = FoliaLib(this)
         GuiManager(this)
         PlayerNameUtil.load(this)
     }

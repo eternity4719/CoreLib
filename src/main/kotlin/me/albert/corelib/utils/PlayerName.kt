@@ -1,6 +1,6 @@
 package me.albert.corelib.utils
 
-import me.albert.corelib.scheduler
+import me.albert.corelib.instance
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
 import org.bukkit.event.EventHandler
@@ -56,7 +56,7 @@ object PlayerNameUtil : Listener {
         val offlinePlayers = Bukkit.getOfflinePlayers()
 
         // 3. 异步解析：将耗时的字符串转换和 Map 写入放入异步线程
-        scheduler.runAsync {
+        instance.launchAsync {
             for (player in offlinePlayers) {
                 val name = player.name ?: continue
                 val uuid = player.uniqueId

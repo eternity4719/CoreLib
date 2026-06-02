@@ -1,6 +1,9 @@
 package me.albert.corelib.utils
 
+import com.github.shynixn.mccoroutine.folia.*
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import me.albert.corelib.instance
 import org.bukkit.Location
 import org.bukkit.Material
@@ -14,6 +17,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.MetadataValue
 import org.bukkit.metadata.Metadatable
+import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.*
 import kotlin.contracts.ExperimentalContracts
@@ -40,6 +44,34 @@ val String.prefixed: String get() = prefix + this.bukkit
 
 fun CommandSender.sendMsg(msg: String) {
     this.sendMessage(msg.prefixed)
+}
+
+fun Plugin.launch(
+    entity: Entity, start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    launch(entityDispatcher(entity), start, block)
+}
+
+fun Plugin.launch(
+    location: Location, start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    launch(regionDispatcher(location), start, block)
+}
+
+fun Plugin.launchAsync(
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    launch(asyncDispatcher, start, block)
+}
+
+fun Plugin.launchGlobal(
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) {
+    launch(globalRegionDispatcher, start, block)
 }
 
 fun ItemStack?.isSame(other: ItemStack?): Boolean {

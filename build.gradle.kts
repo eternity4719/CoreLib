@@ -43,7 +43,6 @@ dependencies {
     paperweight.foliaDevBundle("26.1.2.build.+")
     api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    api("com.tcoded:FoliaLib:0.5.1")
     api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
     // Vault API
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
@@ -51,6 +50,8 @@ dependencies {
     // PlayerPoints API (使用 CodeMC 仓库的最新常见版本，以 3.2.7 为例)
     compileOnly("org.black_ixx:playerpoints:3.2.7")
     api("com.zaxxer:HikariCP:5.1.0")
+    api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
+    api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
 }
 
 tasks {
@@ -61,7 +62,7 @@ tasks {
         minecraftVersion("1.21")
     }
     shadowJar {
-        relocate("com.tcoded.folialib", "me.albert.core.folialib")
+//        relocate("com.tcoded.folialib", "me.albert.core.folialib")
     }
 }
 
