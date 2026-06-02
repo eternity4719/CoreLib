@@ -3,7 +3,7 @@ package me.albert.corelib.objects
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 
-open class EntityScanEvent(isAsync: Boolean) : Event(isAsync) {
+open class BaseEvent(isAsync: Boolean) : Event(isAsync) {
 
     override fun getHandlers(): HandlerList {
         return HANDLERS
