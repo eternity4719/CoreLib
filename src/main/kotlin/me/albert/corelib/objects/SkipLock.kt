@@ -3,26 +3,45 @@ package me.albert.corelib.objects
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 基于 key 的"跳过式"互斥:同一个 key 正在执行时,重复调用直接跳过。
- * 注意:这是 try-lock 语义,不是排队等待。
+ * 跳过式按 key 互斥,支持超时接管。
+ * @param timeoutMillis key 被占用超过这个时长后视为失效,允许重新获取。默认不超时。
  */
-class SkipLock<K : Any> {
-    private val running = ConcurrentHashMap.newKeySet<K>()
+class SkipLock<K : Any>(
+    private val timeoutMillis: Long = Long.MAX_VALUE
+) {
+    // key -> 获取时间戳,这个时间戳同时充当释放凭证
+    private val running = ConcurrentHashMap<K, Long>()
 
     /**
-     * 如果该 key 当前空闲,执行 action 并返回 true;
-     * 如果正在执行,跳过并返回 false。
+     * 尝试占用 key。成功返回一个 token(release 时要传回),
+     * 已有人在跑且未超时则返回 null。
      */
+    fun acquire(key: K): Long? {
+        val now = System.currentTimeMillis()
+        var acquired = false
+        running.compute(key) { _, since ->
+            if (since == null || now - since >= timeoutMillis) {
+                acquired = true
+                now
+            } else since
+        }
+        return if (acquired) now else null
+    }
+
+    /** 只有 token 匹配时才真正释放,避免误删超时后被别人接管的锁。 */
+    fun release(key: K, token: Long) {
+        running.computeIfPresent(key) { _, since ->
+            if (since == token) null else since
+        }
+    }
+
     inline fun tryRun(key: K, action: () -> Unit): Boolean {
-        if (!acquire(key)) return false
+        val token = acquire(key) ?: return false
         try {
             action()
         } finally {
-            release(key)
+            release(key, token)
         }
         return true
     }
-
-    fun acquire(key: K): Boolean = running.add(key)
-    fun release(key: K) { running.remove(key) }
 }
