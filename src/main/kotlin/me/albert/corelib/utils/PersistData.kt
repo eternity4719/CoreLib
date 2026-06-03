@@ -21,7 +21,6 @@ internal inline fun <reified T : Any> getPdcType(): PersistentDataType<*, T> {
         ByteArray::class -> PersistentDataType.BYTE_ARRAY
         IntArray::class -> PersistentDataType.INTEGER_ARRAY
         LongArray::class -> PersistentDataType.LONG_ARRAY
-        Boolean::class -> PersistentDataType.BOOLEAN
         else -> throw IllegalArgumentException("不支持的 PDC 存储类型: ${T::class.java.name}")
     }
     @Suppress("UNCHECKED_CAST")
