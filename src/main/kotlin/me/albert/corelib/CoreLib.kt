@@ -4,6 +4,9 @@ package me.albert.corelib
 import me.albert.corelib.inventory.GuiManager
 import me.albert.corelib.utils.CDUtil
 import me.albert.corelib.utils.PlayerNameUtil
+import me.albert.corelib.utils.prefix
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
@@ -24,6 +27,12 @@ class CoreLib : JavaPlugin() {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (!sender.hasPermission("corelib.admin")) {
             sender.sendMessage("§c你没有权限执行此指令！")
+            return true
+        }
+        if (args.size >= 2 && args[0].contentEquals("mini", true)) {
+            val input = args.drop(1).joinToString(" ")
+            val msg = MiniMessage.miniMessage().deserialize(input)
+            sender.sendMessage(Component.text(prefix).append { msg })
             return true
         }
         when (args.size) {
@@ -82,6 +91,7 @@ class CoreLib : JavaPlugin() {
     private fun sendHelp(sender: CommandSender, label: String) {
         sender.sendMessage("§8========= §bCoreLib 管理菜单 §8=========")
         sender.sendMessage("§3/$label nocd <玩家名> §7- 切换指定玩家的免CD状态(开启/关闭)")
+        sender.sendMessage("§3/$label mini <内容> §7- 预览minimessage")
     }
 
 
