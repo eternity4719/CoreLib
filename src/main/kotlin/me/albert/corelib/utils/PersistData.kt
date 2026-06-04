@@ -1,5 +1,6 @@
 package me.albert.corelib.utils
 
+import io.papermc.paper.persistence.PersistentDataViewHolder
 import me.albert.corelib.instance
 import org.bukkit.NamespacedKey
 import org.bukkit.persistence.PersistentDataHolder
@@ -45,7 +46,7 @@ inline operator fun <reified T : Any> PersistentDataHolder.set(keyStr: String, v
 /**
  * 运算符重载 GET：支持 val v: Type? = holder["key"]
  */
-inline operator fun <reified T : Any> PersistentDataHolder.get(keyStr: String): T? {
+inline operator fun <reified T : Any> PersistentDataViewHolder.get(keyStr: String): T? {
     val key = NamespacedKey(instance, keyStr)
     return this.persistentDataContainer.get(key, getPdcType<T>())
 }
@@ -53,7 +54,7 @@ inline operator fun <reified T : Any> PersistentDataHolder.get(keyStr: String): 
 /**
  * 扩展方法：检查是否存在某个键
  */
-fun PersistentDataHolder.hasPD(keyStr: String): Boolean {
+fun PersistentDataViewHolder.hasPD(keyStr: String): Boolean {
     return this.persistentDataContainer.has(NamespacedKey(instance, keyStr))
 }
 
