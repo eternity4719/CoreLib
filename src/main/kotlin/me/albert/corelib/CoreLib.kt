@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
 
 lateinit var instance: CoreLib
+val server get() = instance.server
 
 
 class CoreLib : JavaPlugin() {

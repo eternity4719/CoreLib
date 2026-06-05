@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import me.albert.corelib.instance
+import me.albert.corelib.server
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
@@ -44,6 +45,10 @@ val String.prefixed: String get() = prefix + this.bukkit
 fun CommandSender.sendMsg(msg: String) {
     this.sendMessage(msg.prefixed)
 }
+
+fun Entity.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
+
+fun Location.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 
 fun Plugin.launch(
     entity: Entity, start: CoroutineStart = CoroutineStart.DEFAULT,
