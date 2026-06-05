@@ -15,7 +15,6 @@ import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
-import org.bukkit.metadata.MetadataValue
 import org.bukkit.metadata.Metadatable
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
@@ -178,9 +177,9 @@ fun Metadatable.deleteMetadata(key: String) {
     removeMetadata(key, instance)
 }
 
-fun Metadatable.getMeta(key: String): MetadataValue? {
+inline fun <reified T> Metadatable.getMeta(key: String): T? {
     // 优化：直接获取第一个，不需要先通过 hasMetadata 进行二次哈希查找
-    return getMetadata(key).firstOrNull()
+    return getMetadata(key).firstOrNull()?.value() as? T
 }
 
 
