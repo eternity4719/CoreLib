@@ -2,9 +2,7 @@ package me.albert.corelib
 
 
 import me.albert.corelib.inventory.GuiManager
-import me.albert.corelib.utils.CDUtil
-import me.albert.corelib.utils.PlayerNameUtil
-import me.albert.corelib.utils.prefix
+import me.albert.corelib.utils.*
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
@@ -22,6 +20,7 @@ class CoreLib : JavaPlugin() {
         instance = this
         GuiManager(this)
         PlayerNameUtil.load(this)
+        registerEvents(ChatHandler)
     }
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
