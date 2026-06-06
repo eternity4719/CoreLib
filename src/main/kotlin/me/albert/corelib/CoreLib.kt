@@ -75,7 +75,7 @@ class CoreLib : JavaPlugin() {
         if (!sender.hasPermission("corelib.admin")) return emptyList()
 
         return when (args.size) {
-            1 -> listOf("nocd").filter { it.startsWith(args[0], ignoreCase = true) }
+            1 -> listOf("nocd", "mini").filter { it.startsWith(args[0], ignoreCase = true) }
             2 -> {
                 if (args[0].equals("nocd", ignoreCase = true)) {
                     val players = mutableListOf<String>()
