@@ -33,6 +33,14 @@ val String.bukkit: String
 val String.rBukkit: String
     get() = if (contains('§')) this.replace("§", "&") else this
 
+fun CommandSender.asPlayer(tip: String = "&c玩家才能使用此命令"): Player? {
+    this as? Player ?: run {
+        tip.isNotBlank().isTrue { sendMsg(tip) }
+        return null
+    }
+    return this
+}
+
 val gson = Gson()
 
 val air = ItemStack(Material.AIR)
