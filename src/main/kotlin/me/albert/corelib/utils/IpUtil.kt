@@ -15,6 +15,7 @@ import java.net.InetSocketAddress
  *
  * QQWry 实例本身线程安全，可被多线程共享，因此这里用单例缓存。
  * 数据库文件需用户自行放入插件数据文件夹（不再内置，以减小 jar 体积）。
+ * 文件缺失或损坏会导致服务器启动失败（IP 库为硬性依赖）。
  * 替换 qqwry.dat 后调用 [reload] 即可热更新，无需重启服务器。
  *
  * 注意：纯真库只支持 IPv4，传入 IPv6 或非法格式会返回 null。
@@ -32,25 +33,28 @@ object IpUtil {
 
     /**
      * 从插件数据文件夹加载 qqwry.dat。
-     * 文件不存在时仅打印提示，不抛异常；查询方法会安全返回 null。
+     * 文件缺失或加载失败时记录严重错误并关闭服务器（IP 库是硬性依赖）。
      * 应在插件 onEnable 时调用一次。
      */
     fun load(plugin: JavaPlugin) {
         val dbFile = File(plugin.dataFolder, DB_FILE_NAME)
         if (!dbFile.exists()) {
-            plugin.logger.warning(
-                "[CoreLib] 未找到 $DB_FILE_NAME，IP 归属地查询将不可用。" +
+            plugin.logger.severe(
+                "[CoreLib] 未找到 $DB_FILE_NAME，IP 库为必需组件，服务器即将关闭。" +
                         "请将纯真数据库放入: ${dbFile.absolutePath}"
             )
             qqwry = null
+            plugin.server.shutdown()
             return
         }
         qqwry = runCatching { QQWry(dbFile.toPath()) }
-            .onFailure { plugin.logger.warning("[CoreLib] 加载 $DB_FILE_NAME 失败: ${it.message}") }
+            .onFailure { plugin.logger.severe("[CoreLib] 加载 $DB_FILE_NAME 失败，服务器即将关闭: ${it.message}") }
             .getOrNull()
-        if (qqwry != null) {
-            plugin.logger.info("[CoreLib] 纯真 IP 数据库已加载，版本: $databaseVersion")
+        if (qqwry == null) {
+            plugin.server.shutdown()
+            return
         }
+        plugin.logger.info("[CoreLib] 纯真 IP 数据库已加载，版本: $databaseVersion")
     }
 
     /** 重新从数据文件夹加载数据库，用于替换 qqwry.dat 后热更新。 */
