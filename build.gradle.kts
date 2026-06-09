@@ -41,18 +41,22 @@ publishing {
 
 dependencies {
     paperweight.foliaDevBundle("26.1.2.build.+")
-    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+
+    // 运行时依赖全部由 CoreLibRuntime 插件提供（见 runtime 子模块），
+    // 这里降为 compileOnly：编译期可见、不打进 CoreLib 主 jar，从而把主 jar 压到最小。
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    compileOnly("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+    compileOnly("com.zaxxer:HikariCP:5.1.0")
+    compileOnly("com.github.jarod:qqwry-java:0.10.1")
+    compileOnly("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
+    compileOnly("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
+
     // Vault API
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
 
     // PlayerPoints API (使用 CodeMC 仓库的最新常见版本，以 3.2.7 为例)
     compileOnly("org.black_ixx:playerpoints:3.2.7")
-    api("com.zaxxer:HikariCP:5.1.0")
-    api("com.github.jarod:qqwry-java:0.10.+")
-    api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
-    api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
 }
 
 tasks {

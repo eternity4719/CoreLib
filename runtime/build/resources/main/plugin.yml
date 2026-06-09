@@ -1,0 +1,7 @@
+name: CoreLibRuntime
+version: '1.0.0'
+main: me.albert.corelib.runtime.CoreLibRuntime
+api-version: '1.13'
+folia-supported: true
+description: CoreLib 的运行时依赖容器，需先于 CoreLib 加载。
+load: STARTUP
