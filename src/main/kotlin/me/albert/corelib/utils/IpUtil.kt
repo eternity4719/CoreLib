@@ -2,29 +2,59 @@ package me.albert.corelib.utils
 
 import com.github.jarod.qqwry.IPZone
 import com.github.jarod.qqwry.QQWry
+import me.albert.corelib.utils.IpUtil.load
+import me.albert.corelib.utils.IpUtil.reload
 import org.bukkit.entity.Player
+import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
 import java.net.InetSocketAddress
 
 
 /**
  * 纯真 IP 数据库 (qqwry.dat) 的 Kotlin 封装。
  *
- * QQWry 实例本身线程安全，可被多线程共享，因此这里用单例懒加载。
- * 数据库文件 qqwry.dat 已放入资源目录，QQWry 无参构造会自动从 classpath 加载。
+ * QQWry 实例本身线程安全，可被多线程共享，因此这里用单例缓存。
+ * 数据库文件需用户自行放入插件数据文件夹（不再内置，以减小 jar 体积）。
+ * 替换 qqwry.dat 后调用 [reload] 即可热更新，无需重启服务器。
  *
  * 注意：纯真库只支持 IPv4，传入 IPv6 或非法格式会返回 null。
  */
 object IpUtil {
 
+    private const val DB_FILE_NAME = "qqwry.dat"
+
     /**
-     * 懒加载的 QQWry 实例。首次使用时把 26MB 的数据库读入内存（约一次性开销）。
-     * 加载失败（资源缺失等）时为 null，所有查询方法将安全返回 null。
+     * 当前加载的 QQWry 实例（约 26MB 常驻内存）。
+     * 未调用 [load]、文件缺失或加载失败时为 null，所有查询方法将安全返回 null。
      */
-    private val qqwry: QQWry? by lazy {
-        runCatching { QQWry() }
-            .onFailure { it.printStackTrace() }
+    @Volatile
+    private var qqwry: QQWry? = null
+
+    /**
+     * 从插件数据文件夹加载 qqwry.dat。
+     * 文件不存在时仅打印提示，不抛异常；查询方法会安全返回 null。
+     * 应在插件 onEnable 时调用一次。
+     */
+    fun load(plugin: JavaPlugin) {
+        val dbFile = File(plugin.dataFolder, DB_FILE_NAME)
+        if (!dbFile.exists()) {
+            plugin.logger.warning(
+                "[CoreLib] 未找到 $DB_FILE_NAME，IP 归属地查询将不可用。" +
+                        "请将纯真数据库放入: ${dbFile.absolutePath}"
+            )
+            qqwry = null
+            return
+        }
+        qqwry = runCatching { QQWry(dbFile.toPath()) }
+            .onFailure { plugin.logger.warning("[CoreLib] 加载 $DB_FILE_NAME 失败: ${it.message}") }
             .getOrNull()
+        if (qqwry != null) {
+            plugin.logger.info("[CoreLib] 纯真 IP 数据库已加载，版本: $databaseVersion")
+        }
     }
+
+    /** 重新从数据文件夹加载数据库，用于替换 qqwry.dat 后热更新。 */
+    fun reload(plugin: JavaPlugin) = load(plugin)
 
     /** 数据库版本号，例如 2021.08.11；加载失败时为 "unknown"。 */
     val databaseVersion: String

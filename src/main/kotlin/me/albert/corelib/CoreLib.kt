@@ -21,6 +21,7 @@ class CoreLib : JavaPlugin() {
         instance = this
         GuiManager(this)
         PlayerNameUtil.load(this)
+        IpUtil.load(this)
         registerEvents(ChatHandler)
     }
 
