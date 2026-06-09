@@ -1,5 +1,7 @@
 plugins {
     kotlin("jvm")
+    `java-library`
+    `maven-publish`
     id("com.gradleup.shadow")
 }
 
@@ -17,28 +19,39 @@ dependencies {
     // Paper API 仅编译期需要（服务器自带），不打包
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
 
-    // 以下全部 shadow 进 CoreLibRuntime.jar，供 CoreLib 及其它插件运行时共享。
-    // 不做 relocate —— 重定位会改变包名，下游插件就找不到这些类了。
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("org.jetbrains.exposed:exposed-jdbc:1.3.0")
-    implementation("com.zaxxer:HikariCP:5.1.0")
-    implementation("com.github.jarod:qqwry-java:0.10.1")
-    implementation("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
-    implementation("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
+    // 运行时依赖的唯一声明处。用 api 暴露：
+    //   - shadowJar 把它们打进 CoreLibRuntime.jar 供服务器运行时共享
+    //   - 发布到 maven 后，作为传递依赖暴露给 CoreLib 及所有下游插件的编译期
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+    api("com.zaxxer:HikariCP:5.1.0")
+    api("com.github.jarod:qqwry-java:0.10.1")
+    api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
+    api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
 }
 
 kotlin {
     jvmToolchain(25)
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"]) // 普通 jar + 含全部 api 依赖的 POM
+            artifactId = "corelib-runtime"
+        }
+    }
+    repositories { mavenLocal() }
+}
+
 tasks {
-    // 让 build 直接产出 shadowJar
     build { dependsOn(shadowJar) }
 
     shadowJar {
         archiveBaseName.set("CoreLibRuntime")
-        archiveClassifier.set("")
+        // 部署到服务器的胖 jar：CoreLibRuntime-<version>-all.jar
+        archiveClassifier.set("all")
     }
 
     processResources {

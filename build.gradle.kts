@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.3.20"
+    `java-library`
     id("com.gradleup.shadow") version "9.4.1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
@@ -44,13 +45,10 @@ dependencies {
 
     // 运行时依赖全部由 CoreLibRuntime 插件提供（见 runtime 子模块），
     // 这里降为 compileOnly：编译期可见、不打进 CoreLib 主 jar，从而把主 jar 压到最小。
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    compileOnly("org.jetbrains.exposed:exposed-jdbc:1.3.0")
-    compileOnly("com.zaxxer:HikariCP:5.1.0")
-    compileOnly("com.github.jarod:qqwry-java:0.10.1")
-    compileOnly("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
-    compileOnly("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
+    // 运行时依赖统一由 :runtime 子模块声明（全部 api）。
+    // compileOnlyApi：编译期能用、不打进 CoreLib 主 jar；同时把 runtime 的传递依赖
+    // 透传给下游插件的编译期。运行时这些类由 CoreLibRuntime 插件经共享 classloader 提供。
+    compileOnlyApi(project(":runtime"))
 
     // Vault API
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
