@@ -19,6 +19,7 @@ class CoreLib : JavaPlugin() {
 
     override fun onEnable() {
         instance = this
+        saveDefaultConfig()
         GuiManager(this)
         PlayerNameUtil.load(this)
         IpUtil.load(this)
