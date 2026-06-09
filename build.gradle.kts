@@ -50,6 +50,7 @@ dependencies {
     // PlayerPoints API (使用 CodeMC 仓库的最新常见版本，以 3.2.7 为例)
     compileOnly("org.black_ixx:playerpoints:3.2.7")
     api("com.zaxxer:HikariCP:5.1.0")
+    api("com.github.jarod:qqwry-java:0.10.+")
     api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
     api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
 }
