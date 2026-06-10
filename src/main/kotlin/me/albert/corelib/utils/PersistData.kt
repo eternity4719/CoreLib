@@ -46,7 +46,10 @@ inline operator fun <reified T : Any> PersistentDataHolder.set(keyStr: String, v
 /**
  * 运算符重载 GET：支持 val v: Type? = holder["key"]
  */
-inline operator fun <reified T : Any> PersistentDataViewHolder.get(keyStr: String): T? {
+inline operator fun <reified T : Any> PersistentDataViewHolder?.get(keyStr: String): T? {
+    if (this == null) {
+        return null
+    }
     val key = NamespacedKey(instance, keyStr)
     return this.persistentDataContainer.get(key, getPdcType<T>())
 }
@@ -54,7 +57,10 @@ inline operator fun <reified T : Any> PersistentDataViewHolder.get(keyStr: Strin
 /**
  * 扩展方法：检查是否存在某个键
  */
-fun PersistentDataViewHolder.hasPD(keyStr: String): Boolean {
+fun PersistentDataViewHolder?.hasPD(keyStr: String): Boolean {
+    if (this == null) {
+        return false
+    }
     return this.persistentDataContainer.has(NamespacedKey(instance, keyStr))
 }
 
