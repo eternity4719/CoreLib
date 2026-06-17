@@ -3,6 +3,7 @@ package me.albert.corelib.inventory
 import me.albert.corelib.utils.bukkit
 import me.albert.corelib.utils.isNull
 import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -20,6 +21,17 @@ class GuiItem(
     val itemStack: ItemStack,
     val onClick: ((InventoryClickEvent) -> Unit)? = null
 )
+
+val glassPane = ItemStack(Material.BLUE_STAINED_GLASS_PANE).apply {
+    editMeta {
+        it.isHideTooltip = true
+    }
+}
+
+/** 空位铺满灰色玻璃板背景 */
+fun GuiHolder.fillGlass() {
+    for (i in 0 until customInventory.size) slots.getOrPut(i) { GuiItem(glassPane) }
+}
 
 // 2. DSL 构造器
 class GuiHolder(title: String, size: Int) : InventoryHolder {
