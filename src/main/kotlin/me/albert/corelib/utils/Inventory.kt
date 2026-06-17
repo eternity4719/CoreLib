@@ -44,8 +44,8 @@ val Inventory.emptySlots: Int
     get() = storageContents.count { it.isNull }
 
 /** 随机取出存储区内的一个物品(数量为 1),并从原堆扣除 1 个 */
-fun Inventory.takeRandomStack(exclude: (ItemStack) -> Boolean = { false }): ItemStack {
-    val items = storageContents.filterNotNull().filter { !it.isEmpty && !exclude(it) }
+fun Inventory.takeRandomStack(): ItemStack {
+    val items = storageContents.filterNotNull().filter { !it.isEmpty }
     val stack = items.random()
     val result = stack.asOne()
     stack.amount -= 1
