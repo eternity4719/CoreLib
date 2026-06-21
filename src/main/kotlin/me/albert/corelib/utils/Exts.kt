@@ -29,10 +29,10 @@ import kotlin.contracts.contract
  * ========================================================================= */
 
 val String.bukkit: String
-    get() = if (contains('&')) this.replace("&", "§") else this
+    get() = replace("&", "§")
 
 val String.rBukkit: String
-    get() = if (contains('§')) this.replace("§", "&") else this
+    get() = replace("§", "&")
 
 fun CommandSender.asPlayer(tip: String = "&c玩家才能使用此命令"): Player? {
     this as? Player ?: run {
