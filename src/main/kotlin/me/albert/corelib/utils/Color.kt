@@ -1,6 +1,8 @@
 package me.albert.corelib.utils
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 val mm = MiniMessage.miniMessage()
 
@@ -18,6 +20,8 @@ private val legacyRegex = Regex("&([0-9a-fk-orA-FK-OR])")
 private val colorRegex = Regex("§.")
 
 fun String.removeColors() = replace(colorRegex, "")
+
+fun Component.toLegacy() = LegacyComponentSerializer.legacySection()
 
 /** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
 fun String.ampToMini(): String =
