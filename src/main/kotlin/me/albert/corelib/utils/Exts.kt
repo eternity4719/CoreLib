@@ -9,6 +9,7 @@ import me.albert.corelib.server
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
+import org.bukkit.block.Block
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
@@ -175,6 +176,38 @@ fun ItemStack?.setLoreAttribute(str: String, value: Double) {
         meta.lore = newLore
         this.itemMeta = meta
     }
+}
+
+/**
+ * 判断单个方块是否会造成窒息伤害。
+ * isOccluding() 表示完全不透明的实心方块（石头、泥土、混凝土等），
+ * 玻璃、台阶、楼梯、栅栏等不会。
+ */
+fun Block.causesSuffocation(): Boolean =
+    type.isOccluding && isSolid
+
+/**
+ * 检测该坐标作为玩家站立点是否会窒息。
+ * 玩家占据脚部和头部两格。
+ */
+fun Location.willSuffocate(): Boolean {
+    val feet = block
+    val head = feet.getRelative(0, 1, 0)
+    return feet.causesSuffocation() || head.causesSuffocation()
+}
+
+/**
+ * 寻找安全传送点时用：空间不会窒息，且脚下有实心支撑。
+ */
+fun Location.isSafe(): Boolean {
+    val feet = block
+    val head = feet.getRelative(0, 1, 0)
+    val ground = feet.getRelative(0, -1, 0)
+
+    val spaceClear = !feet.causesSuffocation() && !head.causesSuffocation()
+    val hasGround = ground.type.isSolid
+
+    return spaceClear && hasGround
 }
 
 
