@@ -14,6 +14,10 @@ fun Entity.checkCD(key: String, time: Long): Long {
     return this.uniqueId.checkCD(key, time)
 }
 
+fun UUID.inCD(key: String, time: Long) = checkCD(key, time) > 0
+
+fun Entity.inCD(key: String, time: Long) = checkCD(key, time) > 0
+
 object CDUtil {
 
     // 所有的冷却数据
