@@ -27,7 +27,7 @@ fun Component.toLegacy() = LegacyComponentSerializer.legacySection()
 /** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
 fun String.ampToMini(): String {
     // 先处理 RGB 颜色码 &x&R&R&G&G&B&B
-    var result = rgbRegex.replace(this) { match ->
+    var result = rgbRegex.replace(this.rBukkit) { match ->
         val hex = match.value.replace("&", "").substring(1) // 去掉 &x 和所有 &，得到 6 位十六进制
         "<color:#$hex>"
     }
