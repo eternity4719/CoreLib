@@ -25,6 +25,7 @@ class CoreLib : JavaPlugin() {
         PlayerNameUtil.load(this)
         IpUtil.load(this)
         EntityScan.init()
+        Expire.init()
         registerEvents(ChatHandler)
     }
 
