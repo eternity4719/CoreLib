@@ -2,6 +2,7 @@ package me.albert.corelib
 
 
 import me.albert.corelib.inventory.GuiManager
+import me.albert.corelib.task.EntityScan
 import me.albert.corelib.utils.*
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
@@ -23,6 +24,7 @@ class CoreLib : JavaPlugin() {
         GuiManager(this)
         PlayerNameUtil.load(this)
         IpUtil.load(this)
+        EntityScan.init()
         registerEvents(ChatHandler)
     }
 
