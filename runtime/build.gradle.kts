@@ -63,6 +63,12 @@ tasks {
         archiveBaseName.set("CoreLibRuntime")
         // 部署到服务器的胖 jar：CoreLibRuntime-<version>-all.jar
         archiveClassifier.set("all")
+
+        // Netty 由 Minecraft 服务端自带，无需重复打包（已实测去掉可正常运行）。
+        // ktor-server-netty 会传递引入 io.netty，这里整组排除以缩小运行时 jar。
+        dependencies {
+            exclude(dependency("io.netty:.*:.*"))
+        }
     }
 
     processResources {
