@@ -25,10 +25,21 @@ dependencies {
     api("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     api("org.jetbrains.exposed:exposed-jdbc:1.3.0")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     api("com.zaxxer:HikariCP:5.1.0")
     api("com.github.jarod:qqwry-java:0.10.1")
     api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
     api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
+    val ktorVersion = "3.2.3"
+    api("io.ktor:ktor-client-core:${ktorVersion}")
+    api("io.ktor:ktor-client-okhttp:${ktorVersion}")
+    api("io.ktor:ktor-server-core:${ktorVersion}")
+    api("io.ktor:ktor-server-netty:${ktorVersion}")
+    api("io.ktor:ktor-server-default-headers:${ktorVersion}")
+    api("io.ktor:ktor-server-status-pages:${ktorVersion}")
+    api("io.ktor:ktor-server-cors:${ktorVersion}")
+    api("io.ktor:ktor-server-content-negotiation:${ktorVersion}")
+    api("io.ktor:ktor-serialization-kotlinx-json:${ktorVersion}")
 }
 
 kotlin {
