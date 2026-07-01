@@ -43,6 +43,8 @@ fun Inventory.hasSpace(item: ItemStack, amount: Int): Boolean {
 val Inventory.emptySlots: Int
     get() = storageContents.count { it.isNull }
 
+val Inventory.hasEmptySlots get() = firstEmpty() != -1
+
 /** 随机取出存储区内的一个物品(数量为 1),并从原堆扣除 1 个 */
 fun Inventory.takeRandomStack(): ItemStack {
     val items = storageContents.filterNotNull().filter { !it.isEmpty }
