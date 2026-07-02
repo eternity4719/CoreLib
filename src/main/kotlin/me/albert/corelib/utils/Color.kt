@@ -3,6 +3,7 @@ package me.albert.corelib.utils
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 
 val mm = MiniMessage.miniMessage()
 
@@ -22,7 +23,9 @@ private val colorRegex = Regex("§.")
 
 fun String.removeColors() = replace(colorRegex, "")
 
-fun Component.toLegacy() = LegacyComponentSerializer.legacySection()
+fun Component.toLegacy() = LegacyComponentSerializer.legacySection().serialize(this)
+
+fun Component.toText() = PlainTextComponentSerializer.plainText().serialize(this)
 
 /** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
 fun String.ampToMini(): String {
