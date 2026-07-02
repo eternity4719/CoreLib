@@ -62,30 +62,22 @@ fun Location.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 fun Plugin.launch(
     entity: Entity, start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    launch(entityDispatcher(entity), start, block)
-}
+) = launch(entityDispatcher(entity), start, block)
 
 fun Plugin.launch(
     location: Location, start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    launch(regionDispatcher(location), start, block)
-}
+) = launch(regionDispatcher(location), start, block)
 
 fun Plugin.launchAsync(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    launch(asyncDispatcher, start, block)
-}
+) = launch(asyncDispatcher, start, block)
 
 fun Plugin.launchGlobal(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    launch(globalRegionDispatcher, start, block)
-}
+) = launch(globalRegionDispatcher, start, block)
 
 fun ItemStack?.isSame(other: ItemStack?): Boolean {
     return this?.isSimilar(other) == true && this.amount == other?.amount
