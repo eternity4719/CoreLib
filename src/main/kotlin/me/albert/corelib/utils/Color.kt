@@ -25,7 +25,7 @@ fun String.removeColors() = replace(colorRegex, "")
 
 fun Component.toLegacy() = LegacyComponentSerializer.legacySection().serialize(this)
 
-fun Component.toText() = PlainTextComponentSerializer.plainText().serialize(this)
+fun Component.toPlainText() = PlainTextComponentSerializer.plainText().serialize(this)
 
 /** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
 fun String.ampToMini(): String {
