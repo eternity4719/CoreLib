@@ -17,16 +17,12 @@ object EntityScan {
         instance.launchAsync {
             while (true) {
                 delay(1.seconds)
-                runCatching {
-                    scan()
-                }.onFailure {
-                    if (debug) it.printStackTrace()
-                }
+                runCatching { scanOnce() }.onFailure { if (debug) it.printStackTrace() }
             }
         }
     }
 
-    private fun scan() {
+    private fun scanOnce() {
         // world.entities 在异步线程不安全，改为遍历已加载区块取各 chunk 的实体
         for (world in Bukkit.getWorlds()) {
             for (chunk in world.loadedChunks) {
