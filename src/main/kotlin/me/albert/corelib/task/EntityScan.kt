@@ -17,12 +17,10 @@ object EntityScan {
         instance.launchAsync {
             while (true) {
                 delay(1.seconds)
-                try {
+                runCatching {
                     scan()
-                } catch (e: Exception) {
-                    if (debug){
-                        e.printStackTrace()
-                    }
+                }.onFailure {
+                    if (debug) it.printStackTrace()
                 }
             }
         }
