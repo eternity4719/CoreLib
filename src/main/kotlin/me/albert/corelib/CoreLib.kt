@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin
 
 lateinit var instance: CoreLib
 val server get() = instance.server
+val debug = false
 
 
 class CoreLib : JavaPlugin() {

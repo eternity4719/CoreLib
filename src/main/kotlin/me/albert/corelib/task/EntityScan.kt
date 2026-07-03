@@ -1,6 +1,7 @@
 package me.albert.corelib.task
 
 import kotlinx.coroutines.delay
+import me.albert.corelib.debug
 import me.albert.corelib.instance
 import me.albert.corelib.utils.launchAsync
 import org.bukkit.Bukkit
@@ -16,7 +17,13 @@ object EntityScan {
         instance.launchAsync {
             while (true) {
                 delay(1.seconds)
-                scan()
+                try {
+                    scan()
+                } catch (e: Exception) {
+                    if (debug){
+                        e.printStackTrace()
+                    }
+                }
             }
         }
     }
