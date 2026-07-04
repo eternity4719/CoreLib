@@ -38,7 +38,7 @@ object Expire : Listener {
         if (System.currentTimeMillis() < expireAt) return
         // EntityScanEvent 在异步线程触发,Folia 下移除实体须切回其所属区域线程
         instance.launch(entity) {
-            if (entity.isValid) entity.remove()
+            entity.removeIfValid()
         }
     }
 }
