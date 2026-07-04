@@ -59,6 +59,17 @@ fun Entity.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 
 fun Location.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 
+fun Entity.removeIfValid(): Boolean {
+    if (!isInCurrentRegion()) {
+        return false
+    }
+    if (isValid) {
+        remove()
+        return true
+    }
+    return false
+}
+
 fun Plugin.launch(
     entity: Entity, start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
