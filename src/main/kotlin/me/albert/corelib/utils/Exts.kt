@@ -60,9 +60,7 @@ fun Entity.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 fun Location.isInCurrentRegion() = server.isOwnedByCurrentRegion(this)
 
 fun Entity.removeIfValid(): Boolean {
-    if (!isInCurrentRegion()) {
-        return false
-    }
+    check(isInCurrentRegion()) { "removeIfValid must be called on the owning region of $this" }
     if (isValid) {
         remove()
         return true
