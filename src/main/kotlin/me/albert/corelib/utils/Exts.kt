@@ -156,21 +156,21 @@ fun ItemStack?.getLoreAttributeValue(str: String): Double {
  * 动态刷新 Lore 中的 RPG 属性值
  * 优化点：无属性变更时绝对不写回 ItemMeta，避免大服高频受击/刷新属性时主线程卡顿
  */
-fun ItemStack?.setLoreAttribute(str: String, value: Double) {
-    if (this == null || isEmpty) return
+fun ItemStack.setLoreAttribute(str: String, value: Double) {
+    if (isEmpty) return
     val meta = itemMeta ?: return
     val lore = meta.lore ?: return
 
-    if (!str.contains("%s%")) return
-    val (first, second) = str.split("%s%", limit = 2)
+    val target = str.bukkit
+    if (!target.contains("%s%")) return
+    val (first, second) = target.split("%s%", limit = 2)
     val formattedValue = String.format(Locale.ROOT, "%.2f", value) // 显式指定 ROOT 规避德语等 VPS 的逗号 Bug
 
     var changed = false
     val newLore = lore.map { line ->
-        if (line.startsWith(first)) {
-            changed = true
-            "$first$formattedValue$second"
-        } else line
+        val newLine = if (line.startsWith(first) && line.endsWith(second)) "$first$formattedValue$second" else line
+        if (newLine != line) changed = true
+        newLine
     }
 
     if (changed) {
