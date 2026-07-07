@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.plugin.Plugin
+import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -69,4 +70,15 @@ object PlayerNameUtil : Listener {
     }
 }
 
-fun fixName(name: String) = PlayerNameUtil.getPlayer(name)?.name ?: name
+
+fun playerOf(name: String) = PlayerNameUtil.getPlayer(name)
+
+fun uuidOrNullOf(name: String) = PlayerNameUtil.getUUID(name)
+
+fun nameOrNullOf(name: String) = playerOf(name)?.name
+
+fun nameOf(name: String) = nameOrNullOf(name) ?: name
+
+fun uuidOf(name: String): UUID =
+    uuidOrNullOf(name)
+        ?: UUID.nameUUIDFromBytes("OfflinePlayer:$name".toByteArray(StandardCharsets.UTF_8))
