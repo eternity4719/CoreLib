@@ -68,3 +68,5 @@ object PlayerNameUtil : Listener {
         }
     }
 }
+
+fun fixName(name: String) = PlayerNameUtil.getPlayer(name)?.name ?: name
