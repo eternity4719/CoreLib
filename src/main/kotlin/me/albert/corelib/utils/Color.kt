@@ -27,14 +27,31 @@ fun Component.toLegacy() = LegacyComponentSerializer.legacySection().serialize(t
 
 fun Component.toPlainText() = PlainTextComponentSerializer.plainText().serialize(this)
 
+private val colorCodes = setOf(
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    'a', 'b', 'c', 'd', 'e', 'f'
+)
+
 /** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
 fun String.ampToMini(): String {
     // 先处理 RGB 颜色码 &x&R&R&G&G&B&B
     var result = rgbRegex.replace(this.rBukkit) { match ->
-        val hex = match.value.replace("&", "").substring(1) // 去掉 &x 和所有 &，得到 6 位十六进制
+        val hex = match.value.replace("&", "").substring(1)
         "<color:#$hex>"
     }
-    // 再处理普通颜色码
-    result = legacyRegex.replace(result) { "<${legacy[it.groupValues[1][0].lowercaseChar()]}>" }
+    // 再处理普通颜色码，模拟 legacy 行为：颜色码和 &r 重置所有装饰
+    val openDecorations = mutableListOf<String>()
+    result = legacyRegex.replace(result) { match ->
+        val code = match.groupValues[1][0].lowercaseChar()
+        val tag = legacy[code] ?: return@replace match.value
+        if (code in colorCodes || code == 'r') {
+            val closeTags = openDecorations.reversed().joinToString("") { "</$it>" }
+            openDecorations.clear()
+            "$closeTags<$tag>"
+        } else {
+            openDecorations.add(tag)
+            "<$tag>"
+        }
+    }
     return result
 }
