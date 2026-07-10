@@ -32,7 +32,16 @@ private val colorCodes = setOf(
     'a', 'b', 'c', 'd', 'e', 'f'
 )
 
-/** 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签 */
+/**
+ * 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签。
+ *
+ * 用于 legacy 颜色码与 MiniMessage 占位符（如 <player>、<message>）混排、
+ * 且最终需交给 mm.deserialize 生成 Component 的场景。此时不能像 [String.bukkit]
+ * 那样直接 replace("&","§")，因为 Component 里残留的 § 不会被客户端渲染。
+ *
+ * 会在颜色码与 &r 处补齐装饰闭合标签，模拟 legacy 行为，避免 &a&lhh&b00 中的
+ * 00 被 <bold> 意外延续加粗。
+ */
 fun String.ampToMini(): String {
     // 先处理 RGB 颜色码 &x&R&R&G&G&B&B
     var result = rgbRegex.replace(this.rBukkit) { match ->
