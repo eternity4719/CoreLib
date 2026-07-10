@@ -29,7 +29,7 @@ import kotlin.contracts.contract
  * ========================================================================= */
 
 val String.bukkit: String
-    get() = mm.deserialize(ampToMini()).toLegacy()
+    get() = mm.deserialize(rBukkit).toLegacy().replace("&", "§")
 
 val String.rBukkit: String
     get() = replace("§", "&")
