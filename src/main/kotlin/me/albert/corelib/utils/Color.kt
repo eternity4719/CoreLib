@@ -17,9 +17,16 @@ private val legacy = mapOf(
     'o' to "italic", 'r' to "reset"
 )
 
-private val legacyRegex = Regex("&([0-9a-fk-orA-FK-OR])")
-private val rgbRegex = Regex("&x(&[0-9a-fA-F]){6}", RegexOption.IGNORE_CASE)
 private val colorRegex = Regex("§.")
+
+/**
+ * 单遍扫描用的 token 正则:按出现顺序匹配三类片段(顺序敏感,RGB 必须在 legacy 之前):
+ *  1. RGB 颜色码 `&x&R&R&G&G&B&B`
+ *  2. legacy 颜色/装饰码 `&<code>`
+ *  3. MiniMessage 标签 `<...>`(开或闭,如 <click:...>、</click>、<bold>)
+ */
+private val tokenRegex =
+    Regex("(&x(?:&[0-9a-fA-F]){6})|&([0-9a-fk-orA-FK-OR])|(<[^>]*>)", RegexOption.IGNORE_CASE)
 
 fun String.removeColors() = replace(colorRegex, "")
 
@@ -33,34 +40,49 @@ private val colorCodes = setOf(
 )
 
 /**
- * 将模板中的 &x 颜色码转换为对应的 MiniMessage 标签。
+ * 将模板中的 & 颜色码转换为对应的 MiniMessage 标签,可与 MiniMessage 标签(<click>、<player> 等)混排,
+ * 最终交给 mm.deserialize 生成 Component。此时不能像 [String.bukkit] 那样直接 replace("&","§"),
+ * 因为 Component 里残留的 § 不会被客户端渲染。
  *
- * 用于 legacy 颜色码与 MiniMessage 占位符（如 <player>、<message>）混排、
- * 且最终需交给 mm.deserialize 生成 Component 的场景。此时不能像 [String.bukkit]
- * 那样直接 replace("&","§")，因为 Component 里残留的 § 不会被客户端渲染。
- *
- * 会在颜色码与 &r 处补齐装饰闭合标签，模拟 legacy 行为，避免 &a&lhh&b00 中的
- * 00 被 <bold> 意外延续加粗。
+ * 单遍按 token 处理,兼顾两件事:
+ *  - **模拟 legacy**:颜色码与 &r 会重置(闭合)此前的所有装饰,避免 &a&lhh&b00 中的 00 被 <bold> 意外延续。
+ *  - **不与成对 MM 标签交叉**:装饰若在 <click>…</click> 内打开、却在其外闭合,会形成
+ *    <click>…<bold>…</click></bold> 交叉嵌套,MiniMessage 无法配对而把 </bold> 当字面文本输出。
+ *    故在每个 MM 标签边界处先闭合当前装饰、放标签、再重开,保证装饰始终在标签内正确嵌套;
+ *    颜色则靠 MiniMessage 的样式继承自然跨越标签,无需重开。
  */
 fun String.ampToMini(): String {
-    // 先处理 RGB 颜色码 &x&R&R&G&G&B&B
-    var result = rgbRegex.replace(this.rBukkit) { match ->
-        val hex = match.value.replace("&", "").substring(1)
-        "<color:#$hex>"
-    }
-    // 再处理普通颜色码，模拟 legacy 行为：颜色码和 &r 重置所有装饰
     val openDecorations = mutableListOf<String>()
-    result = legacyRegex.replace(result) { match ->
-        val code = match.groupValues[1][0].lowercaseChar()
-        val tag = legacy[code] ?: return@replace match.value
-        if (code in colorCodes || code == 'r') {
-            val closeTags = openDecorations.reversed().joinToString("") { "</$it>" }
-            openDecorations.clear()
-            "$closeTags<$tag>"
-        } else {
-            openDecorations.add(tag)
-            "<$tag>"
+    fun closeDecos() = openDecorations.reversed().joinToString("") { "</$it>" }
+    fun reopenDecos() = openDecorations.joinToString("") { "<$it>" }
+
+    return tokenRegex.replace(this.rBukkit) { match ->
+        val rgb = match.groupValues[1]
+        val legacyCode = match.groupValues[2]
+        val mmTag = match.groupValues[3]
+        when {
+            // RGB 颜色:重置装饰(legacy 语义)后上色
+            rgb.isNotEmpty() -> {
+                val hex = rgb.replace("&", "").substring(1) // 去掉全部 & 与前导 x,留 6 位十六进制
+                val close = closeDecos()
+                openDecorations.clear()
+                "$close<color:#$hex>"
+            }
+            // legacy 颜色/装饰码
+            legacyCode.isNotEmpty() -> {
+                val code = legacyCode[0].lowercaseChar()
+                val tag = legacy[code] ?: return@replace match.value
+                if (code in colorCodes || code == 'r') {
+                    val close = closeDecos()
+                    openDecorations.clear()
+                    "$close<$tag>"
+                } else {
+                    openDecorations.add(tag)
+                    "<$tag>"
+                }
+            }
+            // MiniMessage 标签边界:装饰不得跨界,先闭合再重开,保证正确嵌套
+            else -> "${closeDecos()}$mmTag${reopenDecos()}"
         }
     }
-    return result
 }
