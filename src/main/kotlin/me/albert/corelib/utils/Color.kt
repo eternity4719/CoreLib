@@ -23,10 +23,16 @@ private val colorRegex = Regex("§.")
  * 单遍扫描用的 token 正则:按出现顺序匹配三类片段(顺序敏感,RGB 必须在 legacy 之前):
  *  1. RGB 颜色码 `&x&R&R&G&G&B&B`
  *  2. legacy 颜色/装饰码 `&<code>`
- *  3. MiniMessage 标签 `<...>`(开或闭,如 <click:...>、</click>、<bold>)
+ *  3. MiniMessage 标签 `</?名字(:参数)?>`
+ *
+ * 第 3 类只认「合法标签名 = 英文/数字/下划线/连字符」的尖括号:标签名后可跟 `:参数`(URL、#hex、
+ * 引号、中文等任意内容)。故 `<red>`、`</click>`、`<gradient:#..>`、`<hover:show_text:'中文'>` 都识别,
+ * 而 `<&eName&7>`、`<你好>` 这种以 `&`/中文/符号开头的尖括号不当标签,尖括号保留为字面、内部 `&` 码正常转换。
  */
-private val tokenRegex =
-    Regex("(&x(?:&[0-9a-fA-F]){6})|&([0-9a-fk-orA-FK-OR])|(<[^>]*>)", RegexOption.IGNORE_CASE)
+private val tokenRegex = Regex(
+    "(&x(?:&[0-9a-fA-F]){6})|&([0-9a-fk-orA-FK-OR])|(</?[a-zA-Z0-9_-]+(?::[^>]*)?>)",
+    RegexOption.IGNORE_CASE,
+)
 
 fun String.removeColors() = replace(colorRegex, "")
 
