@@ -6,7 +6,6 @@ import me.albert.corelib.task.EntityScan
 import me.albert.corelib.utils.*
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
-import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
@@ -35,52 +34,51 @@ class CoreLib : JavaPlugin() {
             sender.sendMessage("§c你没有权限执行此指令！")
             return true
         }
-        if (args.size >= 2 && args[0].equals("mini", ignoreCase = true)) {
-            val input = args.drop(1).joinToString(" ")
-            val msg = MiniMessage.miniMessage().deserialize(input)
-            sender.sendMessage(Component.text(prefix).append(msg))
-            return true
-        }
-        if (args.size == 2 && args[0].equals("nocd", ignoreCase = true)) {
-            val targetName = args[1]
-            val targetUUID = PlayerNameUtil.getUUID(targetName)
-            if (targetUUID == null) {
-                sender.sendMessage("§c未找到玩家 $targetName")
-                return true
+        when (args.getOrNull(0)?.lowercase()) {
+            "mini" -> {
+                if (args.size >= 2) {
+                    val input = args.drop(1).joinToString(" ")
+                    val msg = MiniMessage.miniMessage().deserialize(input)
+                    sender.sendMessage(Component.text(prefix).append(msg))
+                    return true
+                }
             }
 
-            // 切换免 CD 状态
-            val enable = !CDUtil.isNoCd(targetUUID)
-            if (enable) CDUtil.addNoCdUUID(targetUUID) else CDUtil.removeNoCdUUID(targetUUID)
-            val state = if (enable) "§b开启" else "§c关闭"
-            sender.sendMessage("§a[CoreLib] 已$state§a 玩家 §e$targetName §a的免冷却特权！")
-            return true
+            "nocd" -> {
+                if (args.size == 2) {
+                    val targetName = args[1]
+                    val targetUUID = PlayerNameUtil.getUUID(targetName)
+                    if (targetUUID == null) {
+                        sender.sendMessage("§c未找到玩家 $targetName")
+                        return true
+                    }
+                    // 切换免 CD 状态
+                    val enable = !CDUtil.isNoCd(targetUUID)
+                    if (enable) CDUtil.addNoCdUUID(targetUUID) else CDUtil.removeNoCdUUID(targetUUID)
+                    val state = if (enable) "§b开启" else "§c关闭"
+                    sender.sendMessage("§a[CoreLib] 已$state§a 玩家 §e$targetName §a的免冷却特权！")
+                    return true
+                }
+            }
         }
+
+        // 无参 / 未知命令 / 参数不全:展示帮助菜单
         sendHelp(sender, label)
         return true
     }
 
-    // 自动补全
+    // 自动补全:只补子命令,玩家名交给 Bukkit 默认补全(返回 null)
     override fun onTabComplete(
         sender: CommandSender,
         command: Command,
         alias: String,
         args: Array<out String>
-    ): List<String> {
+    ): List<String>? {
         if (!sender.hasPermission("corelib.admin")) return emptyList()
-
-        return when (args.size) {
-            1 -> listOf("nocd", "mini").filter { it.startsWith(args[0], ignoreCase = true) }
-            2 -> {
-                if (args[0].equals("nocd", ignoreCase = true)) {
-                    Bukkit.getOnlinePlayers()
-                        .map { it.name }
-                        .filter { it.startsWith(args[1], ignoreCase = true) }
-                } else emptyList()
-            }
-
-            else -> emptyList()
+        if (args.size == 1) {
+            return listOf("nocd", "mini").filter { it.startsWith(args[0], ignoreCase = true) }
         }
+        return null
     }
 
     private fun sendHelp(sender: CommandSender, label: String) {
