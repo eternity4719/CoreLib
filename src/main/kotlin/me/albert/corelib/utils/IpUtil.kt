@@ -2,8 +2,6 @@ package me.albert.corelib.utils
 
 import com.github.jarod.qqwry.IPZone
 import com.github.jarod.qqwry.QQWry
-import me.albert.corelib.utils.IpUtil.load
-import me.albert.corelib.utils.IpUtil.reload
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File

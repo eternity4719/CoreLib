@@ -1,11 +1,11 @@
 package me.albert.corelib.objects
 
-import com.google.common.base.Charsets
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.plugin.Plugin
 import java.io.File
 import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 import java.util.logging.Level
 
 class CustomConfig(filename: String, private val plugin: Plugin) {
@@ -42,7 +42,7 @@ class CustomConfig(filename: String, private val plugin: Plugin) {
         config = YamlConfiguration.loadConfiguration(configFile)
         val defConfigStream = plugin.getResource(configFile.name) ?: return
 
-        val reader = InputStreamReader(defConfigStream, Charsets.UTF_8)
+        val reader = InputStreamReader(defConfigStream, StandardCharsets.UTF_8)
         config.setDefaults(YamlConfiguration.loadConfiguration(reader))
     }
 }

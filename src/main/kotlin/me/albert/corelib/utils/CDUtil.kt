@@ -33,7 +33,7 @@ object CDUtil {
     fun isInCd(uuid: UUID, key: String, time: Long): Long {
         // 1. 优先判定管理员免 CD 逻辑
         if (noCdPlayers.contains(uuid)) {
-            Bukkit.getPlayer(uuid)?.sendActionBar("§c已为您跳过剩余冷却: $time")
+            Bukkit.getPlayer(uuid)?.sendActionBar("§c已为您跳过本次冷却(${time}ms)")
             return 0L
         }
 
@@ -42,17 +42,9 @@ object CDUtil {
         // 2. 获取或创建该玩家的冷却数据
         val playerCd = cds.computeIfAbsent(uuid) { ConcurrentHashMap() }
 
-        // 3. 获取上次触发时间
+        // 3. 首次触发或冷却已过，刷新冷却起始点
         val lastTime = playerCd[key]
-        if (lastTime == null) {
-            playerCd[key] = current
-            return 0L
-        }
-
-        val passed = current - lastTime
-        val remaining = time - passed
-
-        // 4. 冷却时间已过，刷新冷却起始点
+        val remaining = if (lastTime == null) 0L else time - (current - lastTime)
         if (remaining <= 0L) {
             playerCd[key] = current
             return 0L

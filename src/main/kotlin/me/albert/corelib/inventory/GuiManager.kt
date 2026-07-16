@@ -16,7 +16,7 @@ import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
 
-// 1. 定义物品与点击事件的包装类
+// 物品与点击事件的包装类
 class GuiItem(
     val itemStack: ItemStack,
     val onClick: ((InventoryClickEvent) -> Unit)? = null
@@ -28,12 +28,12 @@ val glassPane = ItemStack(Material.BLUE_STAINED_GLASS_PANE).apply {
     }
 }
 
-/** 空位铺满灰色玻璃板背景 */
+/** 空位铺满蓝色玻璃板背景 */
 fun GuiHolder.fillGlass() {
     for (i in 0 until customInventory.size) slots.getOrPut(i) { GuiItem(glassPane) }
 }
 
-// 2. DSL 构造器
+// DSL 构造器
 class GuiHolder(title: String, size: Int) : InventoryHolder {
     val slots = mutableMapOf<Int, GuiItem>()
     var onClose: ((InventoryCloseEvent) -> Unit)? = null
@@ -93,7 +93,7 @@ fun createGui(title: String, size: Int, block: GuiHolder.() -> Unit): Inventory 
 }
 
 
-// 4. GUI 管理与事件监听器
+// GUI 管理与事件监听器
 class GuiManager(plugin: JavaPlugin) : Listener {
 
     init {

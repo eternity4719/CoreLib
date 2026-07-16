@@ -40,10 +40,9 @@ fun Component.toLegacy() = LegacyComponentSerializer.legacySection().serialize(t
 
 fun Component.toPlainText() = PlainTextComponentSerializer.plainText().serialize(this)
 
-private val colorCodes = setOf(
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    'a', 'b', 'c', 'd', 'e', 'f'
-)
+/** 是否是 legacy 颜色码(0-9、a-f)；其余(k-o)为装饰码,r 为重置 */
+private val Char.isColorCode: Boolean
+    get() = this in '0'..'9' || this in 'a'..'f'
 
 /**
  * 将模板中的 & 颜色码转换为对应的 MiniMessage 标签,可与 MiniMessage 标签(<click>、<player> 等)混排,
@@ -78,7 +77,7 @@ fun String.ampToMini(): String {
             legacyCode.isNotEmpty() -> {
                 val code = legacyCode[0].lowercaseChar()
                 val tag = legacy[code] ?: return@replace match.value
-                if (code in colorCodes || code == 'r') {
+                if (code.isColorCode || code == 'r') {
                     val close = closeDecos()
                     openDecorations.clear()
                     "$close<$tag>"

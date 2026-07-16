@@ -30,10 +30,15 @@ fun Inventory.removeItems(item: ItemStack, amount: Int) {
 /** 向存储区放入 [amount] 个与 [item] 相似的物品 */
 fun Inventory.addItems(item: ItemStack, amount: Int) {
     val template = item.asOne()
-    repeat(amount) { addItem(template.clone()) }
+    var remaining = amount
+    while (remaining > 0) {
+        val size = minOf(remaining, template.maxStackSize)
+        addItem(template.asQuantity(size))
+        remaining -= size
+    }
 }
 
-/** 是否有足够空位放下 [amount] 个 [item] */
+/** 是否有足够空位放下 [amount] 个 [item]。只按空格子数保守估计，不计入现有同类堆的剩余容量 */
 fun Inventory.hasSpace(item: ItemStack, amount: Int): Boolean {
     val slots = (amount + item.maxStackSize - 1) / item.maxStackSize
     return emptySlots >= slots.coerceAtLeast(1)
@@ -45,7 +50,11 @@ val Inventory.emptySlots: Int
 
 val Inventory.hasEmptySlots get() = firstEmpty() != -1
 
-/** 随机取出存储区内的一个物品(数量为 1),并从原堆扣除 1 个 */
+/**
+ * 随机取出存储区内的一个物品(数量为 1),并从原堆扣除 1 个。
+ *
+ * 前置条件:存储区内必须至少有一个非空物品,否则抛出 [NoSuchElementException]。
+ */
 fun Inventory.takeRandomStack(): ItemStack {
     val items = storageContents.filterNotNull().filter { !it.isEmpty }
     val stack = items.random()

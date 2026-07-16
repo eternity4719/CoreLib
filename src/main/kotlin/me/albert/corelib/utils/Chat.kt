@@ -29,8 +29,6 @@ object ChatHandler : Listener {
 
     @EventHandler
     fun onQuit(event: PlayerQuitEvent) {
-        val player = event.player
-        val uuid = player.uniqueId
-        chatHandlers.remove(uuid)
+        chatHandlers.remove(event.player.uniqueId)
     }
 }

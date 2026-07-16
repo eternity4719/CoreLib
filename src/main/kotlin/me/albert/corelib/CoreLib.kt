@@ -35,37 +35,26 @@ class CoreLib : JavaPlugin() {
             sender.sendMessage("§c你没有权限执行此指令！")
             return true
         }
-        if (args.size >= 2 && args[0].contentEquals("mini", true)) {
+        if (args.size >= 2 && args[0].equals("mini", ignoreCase = true)) {
             val input = args.drop(1).joinToString(" ")
             val msg = MiniMessage.miniMessage().deserialize(input)
-            sender.sendMessage(Component.text(prefix).append { msg })
+            sender.sendMessage(Component.text(prefix).append(msg))
             return true
         }
-        when (args.size) {
-            2 -> {
-                val subCmd = args[0].lowercase()
-                when (subCmd) {
-                    "nocd" -> {
-                        val targetName = args[1]
-                        val targetUUID = PlayerNameUtil.getUUID(targetName)
-
-                        if (targetUUID == null) {
-                            sender.sendMessage("§c未找到玩家 $targetName")
-                            return true
-                        }
-
-                        // 切换免 CD 状态
-                        if (CDUtil.isNoCd(targetUUID)) {
-                            CDUtil.removeNoCdUUID(targetUUID)
-                            sender.sendMessage("§a[CoreLib] 已§c关闭§a 玩家 §e$targetName §a的免冷却特权。")
-                            return true
-                        }
-                        CDUtil.addNoCdUUID(targetUUID)
-                        sender.sendMessage("§a[CoreLib] 已§b开启§a 玩家 §e$targetName §a的免冷却特权！")
-                        return true
-                    }
-                }
+        if (args.size == 2 && args[0].equals("nocd", ignoreCase = true)) {
+            val targetName = args[1]
+            val targetUUID = PlayerNameUtil.getUUID(targetName)
+            if (targetUUID == null) {
+                sender.sendMessage("§c未找到玩家 $targetName")
+                return true
             }
+
+            // 切换免 CD 状态
+            val enable = !CDUtil.isNoCd(targetUUID)
+            if (enable) CDUtil.addNoCdUUID(targetUUID) else CDUtil.removeNoCdUUID(targetUUID)
+            val state = if (enable) "§b开启" else "§c关闭"
+            sender.sendMessage("§a[CoreLib] 已$state§a 玩家 §e$targetName §a的免冷却特权！")
+            return true
         }
         sendHelp(sender, label)
         return true
@@ -84,9 +73,9 @@ class CoreLib : JavaPlugin() {
             1 -> listOf("nocd", "mini").filter { it.startsWith(args[0], ignoreCase = true) }
             2 -> {
                 if (args[0].equals("nocd", ignoreCase = true)) {
-                    val players = mutableListOf<String>()
-                    Bukkit.getOnlinePlayers().forEach { players.add(it.name) }
-                    players.filter { it.startsWith(args[1], ignoreCase = true) }
+                    Bukkit.getOnlinePlayers()
+                        .map { it.name }
+                        .filter { it.startsWith(args[1], ignoreCase = true) }
                 } else emptyList()
             }
 

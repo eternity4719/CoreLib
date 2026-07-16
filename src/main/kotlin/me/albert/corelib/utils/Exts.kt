@@ -35,16 +35,17 @@ val String.rBukkit: String
     get() = replace("§", "&")
 
 fun CommandSender.asPlayer(tip: String = "&c玩家才能使用此命令"): Player? {
-    this as? Player ?: run {
-        tip.isNotBlank().isTrue { sendMsg(tip) }
-        return null
-    }
-    return this
+    if (this is Player) return this
+    if (tip.isNotBlank()) sendMsg(tip)
+    return null
 }
 
 val gson = Gson()
 
+/** 共享单例，只读！ItemStack 可变，需修改请先 clone()，否则会污染所有引用处 */
 val air = ItemStack(Material.AIR)
+
+/** 共享单例，只读！ItemStack 可变，需修改请先 clone()，否则会污染所有引用处 */
 val stone = ItemStack(Material.STONE)
 
 var prefix = "§7[§b系统§7] §a"
@@ -94,16 +95,13 @@ fun ItemStack?.isSame(other: ItemStack?): Boolean {
 
 
 val ItemStack?.isNull: Boolean
-    get() {
-        return (this == null || this.isEmpty)
-    }
+    get() = this == null || this.isEmpty
 
 /* =========================================================================
  * 2. 物品名校验与 RPG Lore 属性解析 (性能大幅优化版)
  * ========================================================================= */
 
-fun ItemStack?.checkName(name: String): Boolean =
-    checkItemDisplayName(this, name.bukkit.trim())
+fun ItemStack?.checkName(name: String): Boolean = checkNames(name)
 
 fun ItemStack?.checkNames(vararg names: String): Boolean {
     if (this == null || isEmpty) return false
@@ -131,6 +129,14 @@ fun JavaPlugin.registerEvents(listener: Listener) {
     server.pluginManager.registerEvents(listener, this)
 }
 
+/** 把含 `%s%` 占位符的 lore 模板转换颜色后拆成前后缀；模板不含 `%s%` 时返回 null */
+private fun parseLorePattern(str: String): Pair<String, String>? {
+    val target = str.bukkit
+    if (!target.contains("%s%")) return null
+    val (first, second) = target.split("%s%", limit = 2)
+    return first to second
+}
+
 /**
  * 提取 Lore 中的 RPG 属性值
  * 优化点：只进行 1 次 ItemMeta 深拷贝，使用原生 substring 避免多余的临时字符串对象生成
@@ -140,9 +146,7 @@ fun ItemStack?.getLoreAttributeValue(str: String): Double {
     val meta = itemMeta ?: return -1.0
     val lore = meta.lore ?: return -1.0
 
-    val target = str.bukkit
-    if (!target.contains("%s%")) return -1.0
-    val (first, second) = target.split("%s%", limit = 2)
+    val (first, second) = parseLorePattern(str) ?: return -1.0
 
     for (line in lore) {
         if (line.startsWith(first) && line.endsWith(second)) {
@@ -161,9 +165,7 @@ fun ItemStack.setLoreAttribute(str: String, value: Double) {
     val meta = itemMeta ?: return
     val lore = meta.lore ?: return
 
-    val target = str.bukkit
-    if (!target.contains("%s%")) return
-    val (first, second) = target.split("%s%", limit = 2)
+    val (first, second) = parseLorePattern(str) ?: return
     val formattedValue = String.format(Locale.ROOT, "%.2f", value) // 显式指定 ROOT 规避德语等 VPS 的逗号 Bug
 
     var changed = false
@@ -200,16 +202,8 @@ fun Location.willSuffocate(): Boolean {
 /**
  * 寻找安全传送点时用：空间不会窒息，且脚下有实心支撑。
  */
-fun Location.isSafe(): Boolean {
-    val feet = block
-    val head = feet.getRelative(0, 1, 0)
-    val ground = feet.getRelative(0, -1, 0)
-
-    val spaceClear = !feet.causesSuffocation() && !head.causesSuffocation()
-    val hasGround = ground.type.isSolid
-
-    return spaceClear && hasGround
-}
+fun Location.isSafe(): Boolean =
+    !willSuffocate() && block.getRelative(0, -1, 0).type.isSolid
 
 
 /* =========================================================================
@@ -252,11 +246,7 @@ fun Player.playSound(sound: Sound, volume: Float, pitch: Float) {
 
 
 /* =========================================================================
- * 5. 逻辑流与数学扩展 (契约 Contracts 智能类型转换版)
- * ========================================================================= */
-
-/* =========================================================================
- * 5. 逻辑流与数学扩展 (契约 Contracts 智能类型转换 修复版)
+ * 5. 逻辑流与数学扩展 (契约 Contracts 智能类型转换)
  * ========================================================================= */
 
 typealias UnitBlock = () -> Unit
