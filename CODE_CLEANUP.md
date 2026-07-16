@@ -16,7 +16,6 @@
 | `utils/Exts.kt` | 新增私有 `parseLorePattern` 辅助函数 | `getLoreAttributeValue` 与 `setLoreAttribute` 原本各自重复「转换颜色 → 校验 `%s%` → split」前置逻辑，现共用一份 |
 | `utils/Exts.kt` | `Location.isSafe()` 复用 `willSuffocate()` | 脚部/头部窒息判断原本写了两遍 |
 | `utils/CDUtil.kt` | `isInCd` 合并重复分支 | 「首次触发」与「冷却已过」两个分支都是 `playerCd[key] = current; return 0L`，合并为一处 |
-| `utils/Economy.kt` | 新增私有 `withEco` 内联辅助函数 | `getMoney` / `giveMoney` / `takeMoney` 原本各自重复「Vault 未就绪返回默认值 + UUID 转 OfflinePlayer」样板 |
 | `utils/Inventory.kt` | `addItems` 按 `maxStackSize` 整堆放入 | 原来 `repeat(amount) { addItem(单个) }`，数量大时要调用几千次 `addItem`；结果不变，性能更好 |
 | `utils/Chat.kt` | `onQuit` 一行化 | 去掉两个多余的中间变量 |
 | `utils/Color.kt` | 删除 `colorCodes` set，改为 `Char.isColorCode` 私有扩展 | 原本 `legacy` map 与 `colorCodes` set 双份维护颜色码知识，新增码要改两处 |

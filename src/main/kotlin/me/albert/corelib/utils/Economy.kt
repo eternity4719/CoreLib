@@ -24,27 +24,28 @@ object EconomyManager {
     // Vault API (游戏币 - Money) - 全 UUID 化
     // ==========================================
 
-    /** 统一处理「Vault 未就绪返回默认值 + UUID 转 OfflinePlayer」的样板 */
-    private inline fun <T> withEco(uuid: UUID, default: T, block: (Economy, OfflinePlayer) -> T): T {
-        val eco = vaultEco ?: return default
-        return block(eco, Bukkit.getOfflinePlayer(uuid))
-    }
-
     /** 获取游戏币余额 */
-    fun getMoney(uuid: UUID): Double = withEco(uuid, 0.0) { eco, player -> eco.getBalance(player) }
+    fun getMoney(uuid: UUID): Double {
+        val eco = vaultEco ?: return 0.0
+        val offlinePlayer = Bukkit.getOfflinePlayer(uuid)
+        return eco.getBalance(offlinePlayer)
+    }
 
     /** 给予游戏币 */
     fun giveMoney(uuid: UUID, amount: Double): Boolean {
         if (amount <= 0) return false
-        return withEco(uuid, false) { eco, player -> eco.depositPlayer(player, amount).transactionSuccess() }
+        val eco = vaultEco ?: return false
+        val offlinePlayer = Bukkit.getOfflinePlayer(uuid)
+        return eco.depositPlayer(offlinePlayer, amount).transactionSuccess()
     }
 
     /** 扣除游戏币 */
     fun takeMoney(uuid: UUID, amount: Double): Boolean {
         if (amount <= 0) return false
-        return withEco(uuid, false) { eco, player ->
-            eco.getBalance(player) >= amount && eco.withdrawPlayer(player, amount).transactionSuccess()
-        }
+        val eco = vaultEco ?: return false
+        val offlinePlayer = Bukkit.getOfflinePlayer(uuid)
+        if (eco.getBalance(offlinePlayer) < amount) return false
+        return eco.withdrawPlayer(offlinePlayer, amount).transactionSuccess()
     }
 
     // ==========================================
