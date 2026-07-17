@@ -44,11 +44,6 @@ class CoreLib : JavaPlugin() {
                 }
             }
 
-            "test" -> {
-                SelfTest(sender).runAll()
-                return true
-            }
-
             "nocd" -> {
                 if (args.size == 2) {
                     val targetName = args[1]
@@ -81,7 +76,7 @@ class CoreLib : JavaPlugin() {
     ): List<String>? {
         if (!sender.hasPermission("corelib.admin")) return emptyList()
         if (args.size == 1) {
-            return listOf("nocd", "mini", "test").filter { it.startsWith(args[0], ignoreCase = true) }
+            return listOf("nocd", "mini").filter { it.startsWith(args[0], ignoreCase = true) }
         }
         return null
     }
@@ -90,7 +85,6 @@ class CoreLib : JavaPlugin() {
         sender.sendMessage("§8========= §bCoreLib 管理菜单 §8=========")
         sender.sendMessage("§3/$label nocd <玩家名> §7- 切换指定玩家的免CD状态(开启/关闭)")
         sender.sendMessage("§3/$label mini <内容> §7- 预览minimessage")
-        sender.sendMessage("§3/$label test §7- 运行核心功能自检")
     }
 
 
