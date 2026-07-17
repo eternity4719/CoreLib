@@ -232,9 +232,7 @@ fun Location.playSound(sound: Sound, volume: Float, pitch: Float) {
     world?.playSound(this, sound, volume, pitch)
 }
 
-fun Location.dropItem(item: ItemStack) {
-    world?.dropItem(this, item)
-}
+fun Location.dropItem(item: ItemStack) = world?.dropItem(this, item)
 
 inline fun <reified T : Entity> Location.spawn(): T {
     return this.world.spawn(this, T::class.java)
