@@ -1,5 +1,6 @@
 package me.albert.corelib.task
 
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
 import me.albert.corelib.debug
 import me.albert.corelib.instance
@@ -14,7 +15,9 @@ import kotlin.time.Duration.Companion.seconds
 object EntityScan {
 
     fun init() {
-        instance.launchAsync {
+        // UNDISPATCHED:先在当前线程跑到第一个 delay 挂起,onEnable 期间不向调度器注册任务
+        // (PlugManX 热重载时注册会被以"插件未启用"拒绝,直接炸掉整个启用流程)
+        instance.launchAsync(CoroutineStart.UNDISPATCHED) {
             while (true) {
                 delay(1.seconds)
                 runCatching { scanOnce() }.onFailure { if (debug) it.printStackTrace() }

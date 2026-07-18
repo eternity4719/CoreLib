@@ -1,5 +1,7 @@
 package me.albert.corelib.utils
 
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.delay
 import me.albert.corelib.instance
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
@@ -10,6 +12,7 @@ import org.bukkit.plugin.Plugin
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 object PlayerNameUtil : Listener {
 
@@ -56,8 +59,11 @@ object PlayerNameUtil : Listener {
         // 2. 安全读取：在主线程获取离线玩家快照（仅获取引用），防止异步并发修改异常
         val offlinePlayers = Bukkit.getOfflinePlayers()
 
-        // 3. 异步解析：将耗时的字符串转换和 Map 写入放入异步线程
-        instance.launchAsync {
+        // 3. 异步解析：将耗时的字符串转换和 Map 写入放入异步线程。
+        // UNDISPATCHED + 开头 delay:onEnable 期间不向调度器注册任务(PlugManX 热重载时
+        // 注册会被以"插件未启用"拒绝,直接炸掉整个启用流程),稍后恢复再异步执行解析
+        instance.launchAsync(CoroutineStart.UNDISPATCHED) {
+            delay(50.milliseconds)
             for (player in offlinePlayers) {
                 val name = player.name ?: continue
                 val uuid = player.uniqueId
