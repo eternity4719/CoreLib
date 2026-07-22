@@ -70,22 +70,43 @@ fun Entity.removeIfValid(): Boolean {
     return false
 }
 
+private val skippedLaunches = java.util.concurrent.atomic.AtomicLong()
+
+@Volatile
+private var lastSkipWarnAt = 0L
+
 /**
- * 插件禁用后(热重载/关服窗口)静默丢弃调度,返回已取消的 Job。
+ * 插件禁用后(热重载/关服窗口)丢弃调度并限频告警,返回已取消的 Job。
  *
  * MCCoroutine 的会话缓存可能在禁用后残留(会话复用不再复查 isEnabled),
  * 继续调度会被 Folia 调度器以 IllegalPluginAccessException 拒绝——事件
  * 处理器里就是持续刷屏。守卫掐掉稳定的坏状态,catch 兜住守卫与调度之间
  * 的竞态窗口;dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),
  * 所以求值放在 catch 范围内。
+ *
+ * 注意这只保护调度层:已禁用实例的监听器在调度之前执行的代码(如删实体)
+ * 拦不住,所以跳过必须可见——每分钟最多告警一次,提示尽快重启。
  */
 private fun Plugin.launchGuarded(build: () -> Job): Job {
-    if (!isEnabled) return Job().apply { cancel() }
+    if (!isEnabled) return skipLaunch()
     return try {
         build()
     } catch (e: org.bukkit.plugin.IllegalPluginAccessException) {
-        Job().apply { cancel() }
+        skipLaunch()
     }
+}
+
+private fun Plugin.skipLaunch(): Job {
+    val total = skippedLaunches.incrementAndGet()
+    val now = System.currentTimeMillis()
+    if (now - lastSkipWarnAt >= 60_000) {
+        lastSkipWarnAt = now
+        server.logger.warning(
+            "[CoreLib] 已丢弃禁用插件 $name 的协程调度(累计 $total 次)——" +
+                "插件已禁用但仍有代码在执行,疑似热重载残留实例,请尽快重启服务器"
+        )
+    }
+    return Job().apply { cancel() }
 }
 
 fun Plugin.launch(
