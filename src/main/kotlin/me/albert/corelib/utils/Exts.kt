@@ -23,6 +23,7 @@ import org.bukkit.event.server.PluginEnableEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.Metadatable
+import org.bukkit.plugin.IllegalPluginAccessException
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
 import java.lang.ref.WeakReference
@@ -119,7 +120,7 @@ private fun Plugin.launchGuarded(build: () -> Job): Job {
     if (!isEnabled || isDying()) return skipLaunch()
     return try {
         build()
-    } catch (e: org.bukkit.plugin.IllegalPluginAccessException) {
+    } catch (_: IllegalPluginAccessException) {
         if (isEnabled) healStaleSession(build) else skipLaunch()
     }
 }
@@ -143,11 +144,11 @@ private fun Plugin.healStaleSession(build: () -> Job): Job {
 private fun Plugin.skipLaunch(): Job {
     val total = skippedLaunches.incrementAndGet()
     val now = System.currentTimeMillis()
-    if (now - lastSkipWarnAt >= 60_000) {
+    if (now - lastSkipWarnAt >= 10_000) {
         lastSkipWarnAt = now
         server.logger.warning(
             "[CoreLib] 已丢弃插件 $name 的协程调度(累计 $total 次)——" +
-                "实例已禁用或正在禁用,疑似热重载残留,若持续出现请重启服务器"
+                    "实例已禁用或正在禁用,疑似热重载残留,若持续出现请重启服务器"
         )
     }
     return Job().apply { cancel() }
