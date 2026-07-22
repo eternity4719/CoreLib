@@ -25,7 +25,9 @@ import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.Metadatable
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
+import java.lang.ref.WeakReference
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -81,7 +83,7 @@ fun Entity.removeIfValid(): Boolean {
 // 刚销毁的会话意外重建并永久残留;墓碑在窗口期开始前(LOWEST)立起,launchGuarded
 // 据此拦截重建。必须按身份比较并用弱引用:PluginBase.equals 按插件名,普通集合会
 // 误伤重载后的新实例,强引用会把旧实例和它的类加载器钉在内存里
-private val dyingPlugins = java.util.concurrent.CopyOnWriteArrayList<java.lang.ref.WeakReference<Plugin>>()
+private val dyingPlugins = CopyOnWriteArrayList<WeakReference<Plugin>>()
 
 private fun Plugin.isDying() = dyingPlugins.any { it.get() === this }
 
@@ -90,7 +92,7 @@ internal object PluginLifecycle : Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     fun onDisable(event: PluginDisableEvent) {
         dyingPlugins.removeIf { it.get() == null }
-        dyingPlugins.add(java.lang.ref.WeakReference(event.plugin))
+        dyingPlugins.add(WeakReference(event.plugin))
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
