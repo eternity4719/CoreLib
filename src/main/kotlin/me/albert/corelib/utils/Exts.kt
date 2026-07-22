@@ -29,6 +29,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -103,7 +104,7 @@ internal object PluginLifecycle : Listener {
     }
 }
 
-private val skippedLaunches = java.util.concurrent.atomic.AtomicLong()
+private val skippedLaunches = AtomicLong()
 
 @Volatile
 private var lastSkipWarnAt = 0L
@@ -112,7 +113,7 @@ private var lastSkipWarnAt = 0L
  * 调度守卫:墓碑/禁用状态丢弃调度并限频告警;毒会话自愈后重试。
  *
  * 注意这只保护调度层:残留实例的监听器在调度之前执行的代码(如删实体)
- * 拦不住,所以跳过必须可见——每分钟最多告警一次,提示尽快重启。
+ * 拦不住,所以跳过必须可见——每 10 秒最多告警一次,提示尽快重启。
  * dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),所以求值
  * 放在 catch 范围内。
  */
@@ -136,7 +137,7 @@ private fun Plugin.healStaleSession(build: () -> Job): Job {
         mcCoroutineConfiguration.disposePluginSession()
         server.logger.warning("[CoreLib] 检测到插件 $name 的残留协程会话(热重载竞态产物),已清除重建")
         build()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         skipLaunch()
     }
 }
@@ -359,7 +360,7 @@ inline fun <T> T?.isNotNullAnd(condition: Boolean, block: (T) -> Unit = {}): Boo
         returns(true) implies (this@isNotNullAnd != null)
     }
     val check = this != null && condition
-    if (check) block(this!!)
+    if (check) block(this)
     return check
 }
 
