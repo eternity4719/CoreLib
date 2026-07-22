@@ -4,6 +4,7 @@ import com.github.shynixn.mccoroutine.folia.*
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import me.albert.corelib.instance
 import me.albert.corelib.server
 import org.bukkit.Location
@@ -69,25 +70,43 @@ fun Entity.removeIfValid(): Boolean {
     return false
 }
 
+/**
+ * 插件禁用后(热重载/关服窗口)静默丢弃调度,返回已取消的 Job。
+ *
+ * MCCoroutine 的会话缓存可能在禁用后残留(会话复用不再复查 isEnabled),
+ * 继续调度会被 Folia 调度器以 IllegalPluginAccessException 拒绝——事件
+ * 处理器里就是持续刷屏。守卫掐掉稳定的坏状态,catch 兜住守卫与调度之间
+ * 的竞态窗口;dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),
+ * 所以求值放在 catch 范围内。
+ */
+private fun Plugin.launchGuarded(build: () -> Job): Job {
+    if (!isEnabled) return Job().apply { cancel() }
+    return try {
+        build()
+    } catch (e: org.bukkit.plugin.IllegalPluginAccessException) {
+        Job().apply { cancel() }
+    }
+}
+
 fun Plugin.launch(
     entity: Entity, start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) = launch(entityDispatcher(entity), start, block)
+) = launchGuarded { launch(entityDispatcher(entity), start, block) }
 
 fun Plugin.launch(
     location: Location, start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) = launch(regionDispatcher(location), start, block)
+) = launchGuarded { launch(regionDispatcher(location), start, block) }
 
 fun Plugin.launchAsync(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) = launch(asyncDispatcher, start, block)
+) = launchGuarded { launch(asyncDispatcher, start, block) }
 
 fun Plugin.launchGlobal(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) = launch(globalRegionDispatcher, start, block)
+) = launchGuarded { launch(globalRegionDispatcher, start, block) }
 
 fun ItemStack?.isSame(other: ItemStack?): Boolean {
     return this?.isSimilar(other) == true && this.amount == other?.amount
