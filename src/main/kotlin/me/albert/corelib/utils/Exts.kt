@@ -15,7 +15,11 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.event.server.PluginDisableEvent
+import org.bukkit.event.server.PluginEnableEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.Metadatable
@@ -70,28 +74,66 @@ fun Entity.removeIfValid(): Boolean {
     return false
 }
 
+/* ---- 插件生命周期墓碑:热重载/禁用竞态防护 ---- */
+
+// 收到过 PluginDisableEvent 的实例。服务端的禁用序列(发事件→置禁用→注销监听器)
+// 不是原子的,窗口期(事件已发、isEnabled 还是 true)在途的 launch 会把 MCCoroutine
+// 刚销毁的会话意外重建并永久残留;墓碑在窗口期开始前(LOWEST)立起,launchGuarded
+// 据此拦截重建。必须按身份比较并用弱引用:PluginBase.equals 按插件名,普通集合会
+// 误伤重载后的新实例,强引用会把旧实例和它的类加载器钉在内存里
+private val dyingPlugins = java.util.concurrent.CopyOnWriteArrayList<java.lang.ref.WeakReference<Plugin>>()
+
+private fun Plugin.isDying() = dyingPlugins.any { it.get() === this }
+
+internal object PluginLifecycle : Listener {
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    fun onDisable(event: PluginDisableEvent) {
+        dyingPlugins.removeIf { it.get() == null }
+        dyingPlugins.add(java.lang.ref.WeakReference(event.plugin))
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    fun onEnable(event: PluginEnableEvent) {
+        // /plugman enable 会重新启用同一个实例,需摘掉墓碑
+        dyingPlugins.removeIf { it.get() == null || it.get() === event.plugin }
+    }
+}
+
 private val skippedLaunches = java.util.concurrent.atomic.AtomicLong()
 
 @Volatile
 private var lastSkipWarnAt = 0L
 
 /**
- * 插件禁用后(热重载/关服窗口)丢弃调度并限频告警,返回已取消的 Job。
+ * 调度守卫:墓碑/禁用状态丢弃调度并限频告警;毒会话自愈后重试。
  *
- * MCCoroutine 的会话缓存可能在禁用后残留(会话复用不再复查 isEnabled),
- * 继续调度会被 Folia 调度器以 IllegalPluginAccessException 拒绝——事件
- * 处理器里就是持续刷屏。守卫掐掉稳定的坏状态,catch 兜住守卫与调度之间
- * 的竞态窗口;dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),
- * 所以求值放在 catch 范围内。
- *
- * 注意这只保护调度层:已禁用实例的监听器在调度之前执行的代码(如删实体)
+ * 注意这只保护调度层:残留实例的监听器在调度之前执行的代码(如删实体)
  * 拦不住,所以跳过必须可见——每分钟最多告警一次,提示尽快重启。
+ * dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),所以求值
+ * 放在 catch 范围内。
  */
 private fun Plugin.launchGuarded(build: () -> Job): Job {
-    if (!isEnabled) return skipLaunch()
+    if (!isEnabled || isDying()) return skipLaunch()
     return try {
         build()
     } catch (e: org.bukkit.plugin.IllegalPluginAccessException) {
+        if (isEnabled) healStaleSession(build) else skipLaunch()
+    }
+}
+
+/**
+ * 毒会话指纹:自身启用但调度被拒。MCCoroutine 的会话表用 Plugin 作键,
+ * 而 PluginBase.equals 按插件名——热重载竞态残留的旧实例会话会被新实例
+ * 按名字撞上,调度时携带的是旧实例引用。清掉串号的死会话再重试一次,
+ * 重试创建的就是本实例的全新会话,本次调用无损完成
+ */
+private fun Plugin.healStaleSession(build: () -> Job): Job {
+    return try {
+        mcCoroutineConfiguration.disposePluginSession()
+        server.logger.warning("[CoreLib] 检测到插件 $name 的残留协程会话(热重载竞态产物),已清除重建")
+        build()
+    } catch (e: Exception) {
         skipLaunch()
     }
 }
@@ -102,8 +144,8 @@ private fun Plugin.skipLaunch(): Job {
     if (now - lastSkipWarnAt >= 60_000) {
         lastSkipWarnAt = now
         server.logger.warning(
-            "[CoreLib] 已丢弃禁用插件 $name 的协程调度(累计 $total 次)——" +
-                "插件已禁用但仍有代码在执行,疑似热重载残留实例,请尽快重启服务器"
+            "[CoreLib] 已丢弃插件 $name 的协程调度(累计 $total 次)——" +
+                "实例已禁用或正在禁用,疑似热重载残留,若持续出现请重启服务器"
         )
     }
     return Job().apply { cancel() }
