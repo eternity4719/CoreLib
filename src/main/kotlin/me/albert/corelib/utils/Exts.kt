@@ -135,7 +135,7 @@ private fun Plugin.launchGuarded(build: () -> Job): Job {
 private fun Plugin.healStaleSession(build: () -> Job): Job {
     return try {
         mcCoroutineConfiguration.disposePluginSession()
-        server.logger.warning("[CoreLib] 检测到插件 $name 的残留协程会话(热重载竞态产物),已清除重建")
+        instance.logger.warning("检测到插件 $name 的残留协程会话(热重载竞态产物),已清除重建")
         build()
     } catch (_: Exception) {
         skipLaunch()
@@ -147,8 +147,8 @@ private fun Plugin.skipLaunch(): Job {
     val now = System.currentTimeMillis()
     if (now - lastSkipWarnAt >= 10_000) {
         lastSkipWarnAt = now
-        server.logger.warning(
-            "[CoreLib] 已丢弃插件 $name 的协程调度(累计 $total 次)——" +
+        instance.logger.warning(
+            "已丢弃插件 $name 的协程调度(累计 $total 次)——" +
                     "实例已禁用或正在禁用,疑似热重载残留,若持续出现请重启服务器"
         )
     }
