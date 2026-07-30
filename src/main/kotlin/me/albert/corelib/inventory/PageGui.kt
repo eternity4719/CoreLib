@@ -44,20 +44,19 @@ fun <T> Player.openPagedGui(
     val title = "$titlePrefix §8第${current + 1}/$totalPages 页"
     // 取别名:GuiHolder 里的 onOpen/onClose 是同名 DSL 方法，直接写会和参数撞上
     val openCallback = onOpen
-    val closeCallback = onClose
 
     val inv = createGui(title, 54) {
         for ((i, data) in pageItems.withIndex()) {
             item(i, render(data)) { e -> onClick(data, e) }
         }
         if (current > 0) item(45, ItemUtil.make(Material.ARROW, "&e« 上一页")) {
-            openPagedGui(titlePrefix, items, current - 1, pageSize, render, onClick, openCallback, closeCallback)
+            openPagedGui(titlePrefix, items, current - 1, pageSize, render, onClick, openCallback, onClose)
         }
         if (current + 1 < totalPages) item(53, ItemUtil.make(Material.ARROW, "&e下一页 »")) {
-            openPagedGui(titlePrefix, items, current + 1, pageSize, render, onClick, openCallback, closeCallback)
+            openPagedGui(titlePrefix, items, current + 1, pageSize, render, onClick, openCallback, onClose)
         }
         onOpen { e -> openCallback(current, e) }
-        onClose { e -> closeCallback(current, e) }
+        onClose { e -> onClose(current, e) }
     }
     openInventory(inv)
 }
