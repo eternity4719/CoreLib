@@ -28,7 +28,7 @@ object CDUtil {
     val noCdPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
     // 惰性清扫的最小间隔：由 isInCd 顺手触发，不额外占用调度任务
-    private const val SWEEP_INTERVAL = 60_000L
+    private const val SWEEP_INTERVAL = 10_000L
     private val lastSweep = AtomicLong(0L)
 
     /**
