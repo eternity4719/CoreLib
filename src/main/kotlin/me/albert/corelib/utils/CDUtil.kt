@@ -1,6 +1,7 @@
 package me.albert.corelib.utils
 
 import me.albert.corelib.instance
+import me.albert.corelib.utils.CDUtil.isInCd
 import org.bukkit.Bukkit
 import org.bukkit.entity.Entity
 import java.util.*
