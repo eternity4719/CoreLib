@@ -1,5 +1,6 @@
 package me.albert.corelib.utils
 
+import me.albert.corelib.instance
 import org.bukkit.Bukkit
 import org.bukkit.entity.Entity
 import java.util.*
@@ -60,9 +61,10 @@ object CDUtil {
     }
 
     /**
-     * 惰性清理：删掉已过期的冷却记录（离线玩家、已销毁的实体不会有人再来查它们）
+     * 惰性清理：由 [isInCd] 顺手触发，扔到异步线程执行，不占用主线程/区域线程
      *
      * 只删过期项，因此对使用方完全透明：这些 key 下次被查到时本来也会判为可用并重新计时
+     * （离线玩家、已销毁的实体不会有人再来查它们，条目就一直留着）
      */
     private fun sweep(current: Long) {
         val last = lastSweep.get()
@@ -73,11 +75,13 @@ object CDUtil {
         if (!lastSweep.compareAndSet(last, current)) {
             return
         }
-        cds.forEach { (uuid, keys) ->
-            keys.entries.removeIf { it.value <= current }
-            if (keys.isEmpty()) {
-                // 判空与写入有竞态，用 computeIfPresent 原子地只删掉仍然为空的表
-                cds.computeIfPresent(uuid) { _, existing -> existing.ifEmpty { null } }
+        instance.launchAsync {
+            cds.forEach { (uuid, keys) ->
+                keys.entries.removeIf { it.value <= current }
+                if (keys.isEmpty()) {
+                    // 判空与写入有竞态，用 computeIfPresent 原子地只删掉仍然为空的表
+                    cds.computeIfPresent(uuid) { _, existing -> existing.ifEmpty { null } }
+                }
             }
         }
     }
