@@ -33,7 +33,7 @@ object EconomyManager {
 
     /** 给予游戏币 */
     fun giveMoney(uuid: UUID, amount: Double): Boolean {
-        if (amount <= 0) return false
+        if (amount <= 0) return true
         val eco = vaultEco ?: return false
         val offlinePlayer = Bukkit.getOfflinePlayer(uuid)
         return eco.depositPlayer(offlinePlayer, amount).transactionSuccess()
@@ -41,7 +41,7 @@ object EconomyManager {
 
     /** 扣除游戏币 */
     fun takeMoney(uuid: UUID, amount: Double): Boolean {
-        if (amount <= 0) return false
+        if (amount <= 0) return true
         val eco = vaultEco ?: return false
         val offlinePlayer = Bukkit.getOfflinePlayer(uuid)
         if (eco.getBalance(offlinePlayer) < amount) return false
@@ -57,13 +57,13 @@ object EconomyManager {
 
     /** 给予点券 */
     fun givePoints(uuid: UUID, amount: Int): Boolean {
-        if (amount <= 0) return false
+        if (amount <= 0) return true
         return pointsAPI?.give(uuid, amount) ?: false
     }
 
     /** 扣除点券 */
     fun takePoints(uuid: UUID, amount: Int): Boolean {
-        if (amount <= 0) return false
+        if (amount <= 0) return true
         val api = pointsAPI ?: return false
         if (api.look(uuid) < amount) return false
         return api.take(uuid, amount)
