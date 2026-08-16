@@ -1,6 +1,7 @@
 package me.albert.corelib.utils
 
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
@@ -37,6 +38,15 @@ private val tokenRegex = Regex(
 fun String.removeColors() = replace(colorRegex, "")
 
 fun Component.toLegacy() = LegacyComponentSerializer.legacySection().serialize(this)
+
+/**
+ * & 色码/MiniMessage 字符串转 Component。拼接 `item.displayName()` 这类 translatable
+ * 组件时必须全程走 Component 发给客户端，物品名才能按玩家语言本地化——
+ * 服务端 [toLegacy] 会把它固定成英文。顺手显式关掉斜体：lore 默认斜体，
+ * 关掉后与 String lore 观感一致；聊天默认非斜体，无影响。
+ */
+val String.comp: Component
+    get() = mm.deserialize(ampToMini()).decoration(TextDecoration.ITALIC, false)
 
 fun Component.toPlainText() = PlainTextComponentSerializer.plainText().serialize(this)
 
