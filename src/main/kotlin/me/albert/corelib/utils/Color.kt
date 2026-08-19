@@ -56,8 +56,9 @@ private val Char.isColorCode: Boolean
 
 /**
  * 将模板中的 & 颜色码转换为对应的 MiniMessage 标签,可与 MiniMessage 标签(<click>、<player> 等)混排,
- * 最终交给 mm.deserialize 生成 Component。此时不能像 [String.bukkit] 那样直接 replace("&","§"),
- * 因为 Component 里残留的 § 不会被客户端渲染。
+ * 最终交给 mm.deserialize 生成 Component。Component 文本里残留的 § 聊天栏其实照常渲染(线上实测),
+ * 但那只是字面字符,不是组件样式:转成 MM 标签才能得到组件级的颜色/装饰——能被 append 的子组件继承
+ * (给 translatable 名字上色靠这个)、能和 <click> 等标签正确嵌套、toLegacy 序列化也不丢。
  *
  * 单遍按 token 处理,兼顾两件事:
  *  - **模拟 legacy**:颜色码与 &r 会重置(闭合)此前的所有装饰,避免 &a&lhh&b00 中的 00 被 <bold> 意外延续。
