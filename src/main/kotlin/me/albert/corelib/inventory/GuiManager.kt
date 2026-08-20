@@ -136,6 +136,9 @@ class GuiManager(plugin: JavaPlugin) : Listener {
 
     @EventHandler(ignoreCancelled = true)
     fun onInventoryClose(event: InventoryCloseEvent) {
+        // 方块/实体容器(location 非 null,纯字段读)必不是自定义 GUI,不读 holder 直接放行:
+        // Residence 等插件会在全局线程 closeInventory,方块容器的 getHolder 要读世界,炸 Folia 线程校验
+        if (event.inventory.location != null) return
         val holder = event.inventory.holder as? GuiHolder ?: return
         holder.onClose?.invoke(event)
     }
