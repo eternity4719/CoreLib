@@ -40,6 +40,9 @@ class GuiHolder(title: String, size: Int) : InventoryHolder {
     val customInventory = Bukkit.createInventory(this, size, title)
 
 
+    // volatile:PVault 等会在别的线程(onDisable 的全局线程)把它翻成 false 冻结界面,
+    // 点击在各玩家区域线程上读,需要立即可见
+    @Volatile
     var allowInteract = false
     var onClick: ((InventoryClickEvent) -> Unit)? = null
     var onItemClick: ((InventoryClickEvent) -> Unit)? = null
