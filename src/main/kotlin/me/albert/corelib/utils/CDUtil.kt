@@ -1,7 +1,6 @@
 package me.albert.corelib.utils
 
 import me.albert.corelib.instance
-import me.albert.corelib.utils.CDUtil.isInCd
 import org.bukkit.Bukkit
 import org.bukkit.entity.Entity
 import java.util.*
@@ -10,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 
 fun UUID.checkCD(key: String, time: Long): Long {
-    return CDUtil.isInCd(this, key, time)
+    return CDUtil.checkCD(this, key, time)
 }
 
 fun Entity.checkCD(key: String, time: Long): Long {
@@ -29,7 +28,7 @@ object CDUtil {
     // 内部管理免 CD 的玩家集合（使用 ConcurrentHashMap.newKeySet() 保证多线程并发安全）
     val noCdPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
-    // 惰性清扫的最小间隔：由 isInCd 顺手触发，不额外占用调度任务
+    // 惰性清扫的最小间隔：由 checkCD 顺手触发，不额外占用调度任务
     private const val SWEEP_INTERVAL = 10_000L
     private val lastSweep = AtomicLong(0L)
 
@@ -37,7 +36,7 @@ object CDUtil {
      * 检查并处理玩家冷却
      */
     @JvmStatic
-    fun isInCd(uuid: UUID, key: String, time: Long): Long {
+    fun checkCD(uuid: UUID, key: String, time: Long): Long {
         // 1. 优先判定管理员免 CD 逻辑
         if (noCdPlayers.contains(uuid)) {
             Bukkit.getPlayer(uuid)?.sendActionBar("§c已为您跳过本次冷却(${time}ms)")
@@ -62,7 +61,7 @@ object CDUtil {
     }
 
     /**
-     * 惰性清理：由 [isInCd] 顺手触发，扔到异步线程执行，不占用主线程/区域线程
+     * 惰性清理：由 [checkCD] 顺手触发，扔到异步线程执行，不占用主线程/区域线程
      *
      * 只删过期项，因此对使用方完全透明：这些 key 下次被查到时本来也会判为可用并重新计时
      * （离线玩家、已销毁的实体不会有人再来查它们，条目就一直留着）
