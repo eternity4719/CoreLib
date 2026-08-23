@@ -6,9 +6,11 @@ import me.albert.corelib.utils.Expire.EXPIRE_KEY
 import org.bukkit.entity.Entity
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.world.EntitiesLoadEvent
 
 /**
- * 实体自动过期清理。给实体打 PDC 时间戳标签 [EXPIRE_KEY],到期后由每秒的 [EntityScanEvent] 扫到并移除。
+ * 实体自动过期清理。给实体打 PDC 时间戳标签 [EXPIRE_KEY],到期后由每秒的 [EntityScanEvent] 扫到并移除,
+ * 区块实体加载([EntitiesLoadEvent])时也对账一次。
  *
  * 用途:为临时生成的 DisplayEntity / 投射物等兜底,防止逻辑异常(任务被打断、服务器卡顿、区块卸载等)
  * 导致实体永久残留。即便业务代码自己也会清理,这里作为最后一道保险。
@@ -32,8 +34,17 @@ object Expire : Listener {
     }
 
     @EventHandler
-    fun onScan(event: EntityScanEvent) {
-        val entity = event.entity
+    fun onScan(event: EntityScanEvent) = removeIfExpired(event.entity)
+
+    /**
+     * 区块实体一读进世界就对账一次,不等下一秒的扫描。
+     * EntityScan 只遍历 loadedChunks,区块若只被短暂拉起(如 teleportAsync 的 5 tick 加载)
+     * 扫描周期撞不上,过期实体会随区块再次落盘、永远清不掉;在这里补上。
+     */
+    @EventHandler
+    fun onEntitiesLoad(event: EntitiesLoadEvent) = event.entities.forEach(::removeIfExpired)
+
+    private fun removeIfExpired(entity: Entity) {
         val expireAt = entity.get<Long>(EXPIRE_KEY) ?: return
         if (System.currentTimeMillis() < expireAt) return
         // EntityScanEvent 在异步线程触发,Folia 下移除实体须切回其所属区域线程
