@@ -34,23 +34,34 @@ object Expire : Listener {
     }
 
     @EventHandler
-    fun onScan(event: EntityScanEvent) = removeIfExpired(event.entity)
+    fun onScan(event: EntityScanEvent) {
+        val entity = event.entity
+        if (!isExpired(entity)) return
+        // EntityScanEvent 在异步线程触发,Folia 下移除实体须切回其所属区域线程
+        instance.launch(entity) {
+            entity.removeIfValid()
+        }
+    }
 
     /**
      * 区块实体一读进世界就对账一次,不等下一秒的扫描。
      * EntityScan 只遍历 loadedChunks,区块若只被短暂拉起(如 teleportAsync 的 5 tick 加载)
      * 扫描周期撞不上,过期实体会随区块再次落盘、永远清不掉;在这里补上。
+     *
+     * 事件在该区块的区域线程上同步触发,**当场删、不要 launch 到下一 tick**:追踪器在实体进世界
+     * (onTrackingStart → ChunkMap.addEntity → updatePlayers)时就已经把生成包发给附近玩家了,
+     * 同 tick 内跟上销毁包客户端来不及画出来;拖到下一 tick 玩家就会看到过期的怪闪一下。
      */
     @EventHandler
-    fun onEntitiesLoad(event: EntitiesLoadEvent) = event.entities.forEach(::removeIfExpired)
-
-    private fun removeIfExpired(entity: Entity) {
-        val expireAt = entity.get<Long>(EXPIRE_KEY) ?: return
-        if (System.currentTimeMillis() < expireAt) return
-        // EntityScanEvent 在异步线程触发,Folia 下移除实体须切回其所属区域线程
-        instance.launch(entity) {
-            entity.removeIfValid()
+    fun onEntitiesLoad(event: EntitiesLoadEvent) {
+        for (entity in event.entities) {
+            if (isExpired(entity)) entity.removeIfValid()
         }
+    }
+
+    private fun isExpired(entity: Entity): Boolean {
+        val expireAt = entity.get<Long>(EXPIRE_KEY) ?: return false
+        return System.currentTimeMillis() >= expireAt
     }
 }
 
