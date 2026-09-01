@@ -71,3 +71,10 @@ fun Inventory.takeRandomStack(): ItemStack {
 fun Player.requireSpaceFor(item: ItemStack) {
     require(inventory.hasSpace(item, item.amount)) { "背包已满，请先清出空位再来。" }
 }
+
+/** 放入背包,放不下的部分掉落在玩家脚下(addItem 的余量不静默丢弃) */
+fun Player.giveOrDrop(vararg items: ItemStack) {
+    for (item in items) {
+        inventory.addItem(item).values.forEach { location.dropItem(it) }
+    }
+}

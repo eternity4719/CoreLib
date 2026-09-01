@@ -37,10 +37,8 @@ object Expire : Listener {
     fun onScan(event: EntityScanEvent) {
         val entity = event.entity
         if (!isExpired(entity)) return
-        // EntityScanEvent 在异步线程触发,Folia 下移除实体须切回其所属区域线程
-        instance.launch(entity) {
-            entity.removeIfValid()
-        }
+        // EntityScanEvent 在异步线程触发,removeSafely 内部切回实体所属区域线程
+        entity.removeSafely()
     }
 
     /**
