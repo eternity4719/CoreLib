@@ -1,5 +1,6 @@
 package me.albert.corelib.utils
 
+import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 
@@ -61,4 +62,12 @@ fun Inventory.takeRandomStack(): ItemStack {
     val result = stack.asOne()
     stack.amount -= 1
     return result
+}
+
+/**
+ * 发放产物前的背包空位闸门:放不下就抛 IllegalStateException(由 guarded 转成红字提示)。
+ * 刻意不掉落到地上;[hasSpace] 只数空格子、不计已有同类堆的剩余容量,宁可保守拒绝。
+ */
+fun Player.requireSpaceFor(item: ItemStack) {
+    require(inventory.hasSpace(item, item.amount)) { "背包已满，请先清出空位再来。" }
 }

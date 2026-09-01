@@ -88,3 +88,5 @@ fun nameOf(name: String) = nameOrNullOf(name) ?: name
 fun uuidOf(name: String): UUID =
     uuidOrNullOf(name)
         ?: UUID.nameUUIDFromBytes("OfflinePlayer:$name".toByteArray(StandardCharsets.UTF_8))
+/** 旧数据兼容:UUID 字符串 → 玩家名,查不到名字时原样返回 UUID 串 */
+fun nameOfUuid(uuid: String): String = Bukkit.getOfflinePlayer(UUID.fromString(uuid)).name ?: uuid

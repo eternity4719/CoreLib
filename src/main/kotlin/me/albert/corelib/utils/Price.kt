@@ -29,3 +29,10 @@ val Double.unit: String
             else -> ""
         }
     }
+
+/** 价格展示串:数值 + 数量级单位括注([unitColor] 上色) + 货币名 */
+fun priceText(price: Double, currency: String, unitColor: String = "§7"): String {
+    val unit = price.unit
+    if (unit.isEmpty()) return "${price.format()} $currency"
+    return "${price.format()}$unitColor($unit) $currency"
+}

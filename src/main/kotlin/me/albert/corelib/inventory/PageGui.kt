@@ -11,6 +11,9 @@ import org.bukkit.inventory.ItemStack
 /** 分页 GUI 默认每页展示数量(54 格界面，留底排放翻页) */
 const val PAGE_SIZE = 45
 
+/** 总页数:向上取整,至少 1 页 */
+fun pageCount(size: Int, pageSize: Int = PAGE_SIZE): Int = maxOf(1, (size + pageSize - 1) / pageSize)
+
 /**
  * 打开一个通用分页 GUI：54 格，前 [pageSize] 格放内容，左下/右下放翻页箭头。
  *
@@ -37,7 +40,7 @@ fun <T> Player.openPagedGui(
     onOpen: (page: Int, event: InventoryOpenEvent) -> Unit = { _, _ -> },
     onClose: (page: Int, event: InventoryCloseEvent) -> Unit = { _, _ -> },
 ) {
-    val totalPages = maxOf(1, (items.size + pageSize - 1) / pageSize)
+    val totalPages = pageCount(items.size, pageSize)
     val current = page.coerceIn(0, totalPages - 1)
     val from = current * pageSize
     val pageItems = items.subList(from, minOf(from + pageSize, items.size))

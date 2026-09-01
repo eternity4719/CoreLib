@@ -6,7 +6,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import me.albert.corelib.instance
+import me.albert.corelib.logger
 import me.albert.corelib.server
+import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
@@ -33,6 +35,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
+import java.util.logging.Level
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -464,3 +467,53 @@ private val timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").with
 
 /** 毫秒时间戳 → `yyyy-MM-dd HH:mm:ss`(DateTimeFormatter 不可变,多线程并发安全) */
 fun Long.formatTime(): String = timeFormat.format(Instant.ofEpochMilli(this))
+
+private val dateOnlyFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
+
+/** 毫秒时间戳 → `yyyy-MM-dd`(只要日期不要时刻的展示场景,如创建日期) */
+fun Long.formatDate(): String = dateOnlyFormat.format(Instant.ofEpochMilli(this))
+
+/** 聊天分隔线:§8 删除线 + 50 空格 */
+const val CHAT_LINE = "§8§m                                                  "
+
+/** GUI/lore 分隔线:& 色码删除线横杠(配合 ItemUtil.make 等做 & 转换的入口使用) */
+const val SEPARATOR = "&8&m──────────────────"
+
+/** lore 分隔线:§ 色码连字符(直接塞 legacy lore 用) */
+const val LORE_LINE = "§8------------------------------"
+
+/** 玩家才能执行的命令分支:非玩家直接抛 IllegalStateException,配合 guarded / runCatching 转成提示 */
+fun CommandSender.requirePlayer(): Player = this as? Player ?: error("该命令只能由玩家执行")
+
+/** 拒绝音效(村民 NO) */
+fun Player.playDenySound() = playSound(Sound.ENTITY_VILLAGER_NO, 1f, 1f)
+
+/** 失败提示 + 拒绝音效 */
+fun Player.sendDeny(msg: String) {
+    sendMessage(msg)
+    playDenySound()
+}
+
+/** 发送一条带系统前缀、内嵌物品名(悬停可查看完整物品)的富文本消息 */
+fun Player.sendItemMsg(before: String, item: ItemStack, after: String) {
+    sendMessage(
+        Component.text(prefix + before)
+            .append(item.displayName())
+            .append(Component.text(after))
+    )
+}
+
+/**
+ * 在 GUI 点击回调中执行业务逻辑,把 check/require 的失败转成聊天提示而不是后台异常。
+ * 只有 check/require 抛出的这两类异常算预期内的业务中断;其余都是真 bug,
+ * 提示玩家的同时必须落日志,否则会被这层 catch 静默吞掉。
+ */
+inline fun Player.guarded(block: () -> Unit) {
+    runCatching(block).onFailure {
+        sendMsg("§c${it.message ?: "操作失败，请稍后再试"}")
+        playDenySound()
+        if (it !is IllegalStateException && it !is IllegalArgumentException) {
+            logger.log(Level.WARNING, "[GUI] $name 操作异常", it)
+        }
+    }
+}

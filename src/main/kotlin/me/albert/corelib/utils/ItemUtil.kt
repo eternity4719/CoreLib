@@ -134,3 +134,7 @@ fun ItemStack.toBase64(): String = Base64.encode(serializeAsBytes())
 fun String.toItemStack(): ItemStack = ItemStack.deserializeBytes(Base64.decode(this))
 
 
+
+/** 物品展示名的纯文本:自定义名去格式,无自定义名时回退为小写空格化的材质名 */
+val ItemStack.plainName: String
+    get() = itemMeta?.displayName()?.toPlainText() ?: type.name.lowercase().replace('_', ' ')
