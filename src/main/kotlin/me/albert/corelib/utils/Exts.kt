@@ -27,6 +27,9 @@ import org.bukkit.plugin.IllegalPluginAccessException
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
 import java.lang.ref.WeakReference
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
@@ -456,3 +459,8 @@ tailrec fun Int.pow(exp: Int, acc: Int = 1): Int =
 
 tailrec fun Long.pow(exp: Int, acc: Long = 1): Long =
     if (exp == 0) acc else this.pow(exp - 1, acc * this)
+
+private val timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+
+/** 毫秒时间戳 → `yyyy-MM-dd HH:mm:ss`(DateTimeFormatter 不可变,多线程并发安全) */
+fun Long.formatTime(): String = timeFormat.format(Instant.ofEpochMilli(this))
