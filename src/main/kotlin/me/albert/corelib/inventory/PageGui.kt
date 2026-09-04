@@ -7,6 +7,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.ItemStack
+import org.bukkit.plugin.java.JavaPlugin
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -24,11 +25,12 @@ fun pageCount(size: Int, pageSize: Int = PAGE_SIZE): Int = maxOf(1, (size + page
  *
  * 想让玩家下次打开回到上次停留的那一页，传一个 [remember] 键即可(同一玩家按键各记各的)：
  * 关闭时记下页码，下次打开覆盖 [page] 作为初始页。内存态，重启即清。
+ * 键自动挂调用方插件名(由 [render] 回调所属的插件反查)，各插件传 "pills" 这种短键互不干扰。
  *
  * @param titlePrefix 标题前缀，后面自动补 " §8第 N/M 页"
  * @param items       全部数据项(翻页为纯内存切片)
  * @param page        初始页(从 0 开始)；给了 [remember] 且有记录时以记录为准
- * @param remember    页码记忆键(如 "block_shop")，null 不记
+ * @param remember    页码记忆键(如 "block_shop"，插件内唯一即可)，null 不记
  * @param render      把单个数据项渲染成展示物品
  * @param onClick     点击某项时的回调
  * @param onOpen      界面打开后回调(当前页码, 事件)
@@ -46,7 +48,7 @@ fun <T> Player.openPagedGui(
     onClose: (page: Int, event: InventoryCloseEvent) -> Unit = { _, _ -> },
 ) {
     // 记忆只在入口查一次:翻页箭头走 openPage 直接给页码,否则会被记忆里的旧页顶掉
-    val memoryKey = remember?.let { PageMemory.Key(uniqueId, it) }
+    val memoryKey = remember?.let { PageMemory.Key(uniqueId, "${JavaPlugin.getProvidingPlugin(render.javaClass).name}:$it") }
     val initial = memoryKey?.let { PageMemory.pages[it] } ?: page
     openPage(titlePrefix, items, initial, pageSize, memoryKey, render, onClick, onOpen, onClose)
 }
@@ -95,6 +97,7 @@ private fun <T> Player.openPage(
  * 用并发表：Folia 下开关界面跑在各自玩家所在区域的线程上，两人同时关界面就是两个线程同时写。
  */
 private object PageMemory {
+    /** [gui] 形如 "XCore:pills"，插件名做前缀 */
     data class Key(val player: UUID, val gui: String)
 
     val pages = ConcurrentHashMap<Key, Int>()
