@@ -171,6 +171,22 @@ fun Plugin.launch(
     block: suspend CoroutineScope.() -> Unit
 ) = launchGuarded { launch(regionDispatcher(location), start, block) }
 
+/**
+ * 免传插件的 [Plugin.launch]:归属插件由 [block] 所属的类加载器反查
+ * (suspend lambda 编译成调用方插件里的类),就是"写这段代码的插件"——
+ * 协程会话按插件分、随插件禁用而死,和手传自家 instance 完全等价。
+ */
+fun Entity.launch(
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) = JavaPlugin.getProvidingPlugin(block.javaClass).launch(this, start, block)
+
+/** 免传插件的 [Plugin.launch](区域线程版),归属规则同 [Entity.launch] */
+fun Location.launch(
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    block: suspend CoroutineScope.() -> Unit
+) = JavaPlugin.getProvidingPlugin(block.javaClass).launch(this, start, block)
+
 fun Plugin.launchAsync(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
