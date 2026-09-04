@@ -536,7 +536,7 @@ inline fun Player.guarded(block: () -> Unit) {
 
 /** 跨线程安全移除:切回实体所属区域线程再 [removeIfValid](Folia 上跨区直接 remove 会炸线程校验) */
 fun Entity.removeSafely() {
-    instance.launch(this) { removeIfValid() }
+    launch { removeIfValid() }
 }
 
 /** 管理员权限门:无 admin 权限时提示并返回 false,调用处卫语句直接 return */
