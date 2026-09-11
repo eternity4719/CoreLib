@@ -1,11 +1,14 @@
 package me.albert.corelib.utils
 
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Delay
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -24,9 +27,12 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.logging.Level
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
 
 /*
  * 自家协程调度层(2026-09-11 起替换 mccoroutine-folia,API 名字照旧:plugin.launch / scope /
@@ -37,21 +43,52 @@ import kotlin.coroutines.CoroutineContext
  * 它的会话表又按 Plugin 作键而 PluginBase.equals 按名字,热重载时新旧实例串号,corelib 曾为此堆了
  * 一整套"毒会话指纹/自愈"补丁。我们实际只用四个 dispatcher + 每插件一个作用域,自己写更干净。
  *
- * 语义(和之前一致,别改):
+ * 语义:
  * - 所有 dispatcher 的 isDispatchNeeded 恒 true → launch 默认下一 tick 才跑,同线程也不会当场执行;
  *   要当场跑到第一个挂起点用 CoroutineStart.UNDISPATCHED。
- * - delay 不走 Folia 调度器(不实现 Delay),仍是 kotlinx 默认计时线程 + 回派,所以 delay(50ms) 不等于一 tick,
- *   逐帧循环用 nextTick()/yield()。
+ * - delay 按真实时间走且**自动对表**(见 [DelayClock]):同一协程里连续的 delay 从上一次的计划唤醒时刻接着算,
+ *   醒晚了的部分下一拍自动扣回,循环平均周期 = 设定值;落后一整拍以上重新对表、不追旧账。
+ *   单次 delay 仍至少要等到下一 tick 才恢复(协程体必须在区域线程跑),要严格"一 tick 一步"用 yield()/nextTick()。
  * - 调度器拒绝任务(实体已移除、插件已禁用)时**取消协程再当场跑一次 block 让它走完**:没启动的协程
  *   在恢复入口看到 Job 已取消直接抛 CancellationException,协程体一行不跑;已挂起的在挂起点抛出,
  *   finally 在当前线程跑一次。withContext 的调用方会收到 CancellationException,当"目标已不在"处理。
  * - 实体调度器 retired 回调也会跑 block(实体已移除仍会跑),协程体照旧自己判 isValid/isOnline。
  */
 
+// ---------------- delay 对表 ----------------
+
+/**
+ * 每个 Job 记一份"上一次计划唤醒时刻"。协程醒来总比计划晚(计时器到点后还要等下一 tick),
+ * 裸按 now + d 算下一拍就一路累积:delay(75ms) 十步跑成 1000ms。这里下一拍 = 上一拍计划时刻 + d,
+ * 晚醒的那点在这一拍里少睡回来;单圈干活太久、落后一整拍以上时才从 now 重新起算,防止连环零睡眠。
+ * Job 完成即清理条目;withContext/async 各有自己的 Job,互不串账。
+ */
+private object DelayClock {
+
+    private val lastDeadline = ConcurrentHashMap<Job, Long>()
+
+    fun next(job: Job?, ms: Long): Long {
+        val now = System.currentTimeMillis()
+        if (job == null) return now + ms
+        val prev = lastDeadline[job]
+        val base = if (prev != null && now - prev < ms) prev else now
+        val deadline = base + ms
+        if (prev == null) job.invokeOnCompletion { lastDeadline.remove(job) }
+        lastDeadline[job] = deadline
+        return deadline
+    }
+}
+
+/** 全部 dispatcher 共用的计时线程:只负责到点后把恢复任务丢回对应调度器,自己不跑业务 */
+private val delayTimer = Executors.newSingleThreadScheduledExecutor { r ->
+    Thread(r, "CoreLib-Delay").apply { isDaemon = true }
+}
+
 // ---------------- dispatcher ----------------
 
 /** Folia 调度器包装的 dispatcher 基类:调度失败就取消协程并让它走完,不留永远挂起的 Job */
-abstract class FoliaDispatcher(protected val plugin: Plugin) : CoroutineDispatcher() {
+@OptIn(InternalCoroutinesApi::class)
+abstract class FoliaDispatcher(protected val plugin: Plugin) : CoroutineDispatcher(), Delay {
 
     override fun isDispatchNeeded(context: CoroutineContext) = true
 
@@ -59,6 +96,14 @@ abstract class FoliaDispatcher(protected val plugin: Plugin) : CoroutineDispatch
         if (plugin.isEnabled && runCatching { schedule(block) }.getOrDefault(false)) return
         context[Job]?.cancel(CancellationException("调度被拒:${describe()}"))
         block.run()
+    }
+
+    /** 到点后在计时线程 resume,恢复本身会经 [dispatch] 回到该协程自己的调度器线程 */
+    final override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
+        val deadline = DelayClock.next(continuation.context[Job], timeMillis)
+        val wait = (deadline - System.currentTimeMillis()).coerceAtLeast(0)
+        val future = delayTimer.schedule({ continuation.resume(Unit) }, wait, TimeUnit.MILLISECONDS)
+        continuation.invokeOnCancellation { future.cancel(false) }
     }
 
     /** 把 [block] 交给对应的 Folia 调度器,接了返回 true */
