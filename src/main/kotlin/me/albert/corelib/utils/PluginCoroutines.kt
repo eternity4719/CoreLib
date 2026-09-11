@@ -60,10 +60,16 @@ import kotlin.coroutines.resume
 /**
  * 每个 Job 记一份"上一次计划唤醒时刻"。协程醒来总比计划晚(计时器到点后还要等下一 tick),
  * 裸按 now + d 算下一拍就一路累积:delay(75ms) 十步跑成 1000ms。这里下一拍 = 上一拍计划时刻 + d,
- * 晚醒的那点在这一拍里少睡回来;单圈干活太久、落后一整拍以上时才从 now 重新起算,防止连环零睡眠。
+ * 晚醒的那点在这一拍里少睡回来;落后太多(单圈干活太久、卡顿)才从 now 重新起算,防止连环零睡眠。
+ *
+ * "落后太多"的门槛是 **d + 一 tick**,不是 d:醒来天然最多晚一 tick,周期 ≤ 50ms 的循环晚到的量本来就贴着 d 晃,
+ * 门槛取 d 会被 tick 的零点几毫秒抖动反复触发重置、每次白丢一拍(实测 delay(50ms) 二十步跑成 1348ms)。
+ * 放宽一 tick 不会连跑:恢复要经调度器排到下一 tick,再怎么追也是一 tick 一步。
  * Job 完成即清理条目;withContext/async 各有自己的 Job,互不串账。
  */
 private object DelayClock {
+
+    private const val TICK_MS = 50L
 
     private val lastDeadline = ConcurrentHashMap<Job, Long>()
 
@@ -71,7 +77,7 @@ private object DelayClock {
         val now = System.currentTimeMillis()
         if (job == null) return now + ms
         val prev = lastDeadline[job]
-        val base = if (prev != null && now - prev < ms) prev else now
+        val base = if (prev != null && now - prev < ms + TICK_MS) prev else now
         val deadline = base + ms
         if (prev == null) job.invokeOnCompletion { lastDeadline.remove(job) }
         lastDeadline[job] = deadline
