@@ -165,13 +165,15 @@ private fun Plugin.skipLaunch(): Job {
  * 在实体调度器上起协程,不用传插件:归属插件由 [block] 所属的类加载器反查
  * (suspend lambda 编译成调用方插件里的类),就是"写这段代码的插件"——
  * 协程会话按插件分、随插件禁用而死,和手传自家 instance 完全等价。
+ *
+ * 走 [SafeEntityDispatcher] 而不是 mccoroutine 自带的:实体已移除时协程会被取消而不是永远挂着漏内存。
  */
 fun Entity.launch(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
 ): Job {
     val plugin = JavaPlugin.getProvidingPlugin(block.javaClass)
-    return plugin.launchGuarded { plugin.launch(plugin.entityDispatcher(this), start, block) }
+    return plugin.launchGuarded { plugin.launch(plugin.safeEntityDispatcher(this), start, block) }
 }
 
 /** 区域线程版 [Entity.launch],归属规则相同 */
