@@ -28,8 +28,6 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     api("com.zaxxer:HikariCP:5.1.0")
     api("com.github.jarod:qqwry-java:0.10.1")
-    api("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.22.0")
-    api("com.github.shynixn.mccoroutine:mccoroutine-folia-core:2.22.0")
     val ktorVersion = "3.2.3"
     api("io.ktor:ktor-client-core:${ktorVersion}")
     api("io.ktor:ktor-client-okhttp:${ktorVersion}")

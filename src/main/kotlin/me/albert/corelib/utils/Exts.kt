@@ -1,10 +1,6 @@
 package me.albert.corelib.utils
 
-import com.github.shynixn.mccoroutine.folia.*
 import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
 import me.albert.corelib.instance
 import me.albert.corelib.logger
 import me.albert.corelib.server
@@ -17,24 +13,15 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
-import org.bukkit.event.EventHandler
-import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
-import org.bukkit.event.server.PluginDisableEvent
-import org.bukkit.event.server.PluginEnableEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.metadata.FixedMetadataValue
 import org.bukkit.metadata.Metadatable
-import org.bukkit.plugin.IllegalPluginAccessException
-import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
-import java.lang.ref.WeakReference
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.atomic.AtomicLong
 import java.util.logging.Level
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -83,117 +70,6 @@ fun Entity.removeIfValid(): Boolean {
     }
     return false
 }
-
-/* ---- 插件生命周期墓碑:热重载/禁用竞态防护 ---- */
-
-// 收到过 PluginDisableEvent 的实例。服务端的禁用序列(发事件→置禁用→注销监听器)
-// 不是原子的,窗口期(事件已发、isEnabled 还是 true)在途的 launch 会把 MCCoroutine
-// 刚销毁的会话意外重建并永久残留;墓碑在窗口期开始前(LOWEST)立起,launchGuarded
-// 据此拦截重建。必须按身份比较并用弱引用:PluginBase.equals 按插件名,普通集合会
-// 误伤重载后的新实例,强引用会把旧实例和它的类加载器钉在内存里
-private val dyingPlugins = CopyOnWriteArrayList<WeakReference<Plugin>>()
-
-private fun Plugin.isDying() = dyingPlugins.any { it.get() === this }
-
-internal object PluginLifecycle : Listener {
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    fun onDisable(event: PluginDisableEvent) {
-        dyingPlugins.removeIf { it.get() == null }
-        dyingPlugins.add(WeakReference(event.plugin))
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    fun onEnable(event: PluginEnableEvent) {
-        // /plugman enable 会重新启用同一个实例,需摘掉墓碑
-        dyingPlugins.removeIf { it.get() == null || it.get() === event.plugin }
-    }
-}
-
-private val skippedLaunches = AtomicLong()
-
-@Volatile
-private var lastSkipWarnAt = 0L
-
-/**
- * 调度守卫:墓碑/禁用状态丢弃调度并限频告警;毒会话自愈后重试。
- *
- * 注意这只保护调度层:残留实例的监听器在调度之前执行的代码(如删实体)
- * 拦不住,所以跳过必须可见——每 10 秒最多告警一次,提示尽快重启。
- * dispatcher 属性访问也可能抛(会话创建时的 isEnabled 检查),所以求值
- * 放在 catch 范围内。
- */
-private fun Plugin.launchGuarded(build: () -> Job): Job {
-    if (!isEnabled || isDying()) return skipLaunch()
-    return try {
-        build()
-    } catch (_: IllegalPluginAccessException) {
-        if (isEnabled) healStaleSession(build) else skipLaunch()
-    }
-}
-
-/**
- * 毒会话指纹:自身启用但调度被拒。MCCoroutine 的会话表用 Plugin 作键,
- * 而 PluginBase.equals 按插件名——热重载竞态残留的旧实例会话会被新实例
- * 按名字撞上,调度时携带的是旧实例引用。清掉串号的死会话再重试一次,
- * 重试创建的就是本实例的全新会话,本次调用无损完成
- */
-private fun Plugin.healStaleSession(build: () -> Job): Job {
-    return try {
-        mcCoroutineConfiguration.disposePluginSession()
-        instance.logger.warning("检测到插件 $name 的残留协程会话(热重载竞态产物),已清除重建")
-        build()
-    } catch (_: Exception) {
-        skipLaunch()
-    }
-}
-
-private fun Plugin.skipLaunch(): Job {
-    val total = skippedLaunches.incrementAndGet()
-    val now = System.currentTimeMillis()
-    if (now - lastSkipWarnAt >= 10_000) {
-        lastSkipWarnAt = now
-        instance.logger.warning(
-            "已丢弃插件 $name 的协程调度(累计 $total 次)——" +
-                    "实例已禁用或正在禁用,疑似热重载残留,若持续出现请重启服务器"
-        )
-    }
-    return Job().apply { cancel() }
-}
-
-/**
- * 在实体调度器上起协程,不用传插件:归属插件由 [block] 所属的类加载器反查
- * (suspend lambda 编译成调用方插件里的类),就是"写这段代码的插件"——
- * 协程会话按插件分、随插件禁用而死,和手传自家 instance 完全等价。
- *
- * 走 [SafeEntityDispatcher] 而不是 mccoroutine 自带的:实体已移除时协程会被取消而不是永远挂着漏内存。
- */
-fun Entity.launch(
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-): Job {
-    val plugin = JavaPlugin.getProvidingPlugin(block.javaClass)
-    return plugin.launchGuarded { plugin.launch(plugin.safeEntityDispatcher(this), start, block) }
-}
-
-/** 区域线程版 [Entity.launch],归属规则相同 */
-fun Location.launch(
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-): Job {
-    val plugin = JavaPlugin.getProvidingPlugin(block.javaClass)
-    return plugin.launchGuarded { plugin.launch(plugin.regionDispatcher(this), start, block) }
-}
-
-fun Plugin.launchAsync(
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-) = launchGuarded { launch(asyncDispatcher, start, block) }
-
-fun Plugin.launchGlobal(
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> Unit
-) = launchGuarded { launch(globalRegionDispatcher, start, block) }
 
 fun ItemStack?.isSame(other: ItemStack?): Boolean {
     return this?.isSimilar(other) == true && this.amount == other?.amount
