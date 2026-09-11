@@ -5,14 +5,11 @@ import me.albert.corelib.instance
 import me.albert.corelib.logger
 import me.albert.corelib.server
 import net.kyori.adventure.text.Component
-import net.minecraft.core.component.DataComponents
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.block.Block
 import org.bukkit.command.CommandSender
-import org.bukkit.craftbukkit.inventory.CraftItemStack
-import org.bukkit.craftbukkit.util.CraftChatMessage
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
@@ -28,7 +25,6 @@ import java.util.*
 import java.util.logging.Level
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-import net.minecraft.world.item.ItemStack as NmsItemStack
 
 /* =========================================================================
  * 1. 颜色与字符处理优化
@@ -87,22 +83,15 @@ val ItemStack?.isNull: Boolean
  * 2. 物品名校验与 RPG Lore 属性解析 (性能大幅优化版)
  * ========================================================================= */
 
-/**
- * 物品自定义名的 legacy § 串,没有自定义名返回 null。
- * 直接读 CUSTOM_NAME 组件再走 CraftChatMessage.fromComponent,和 ItemMeta.getDisplayName 是同一条转换路径、结果一致,
- * 但不构建整份 ItemMeta(那会把 lore/附魔/属性/PDC 全解一遍),高频判名(全服掉落物事件之类)用这个。
- * NMS 侧不能叫 customName:NmsItemStack 自带 getCustomName() 会把同名扩展遮掉。
- */
-val NmsItemStack.customLegacyName: String?
-    get() = get(DataComponents.CUSTOM_NAME)?.let(CraftChatMessage::fromComponent)
-
-val ItemStack?.customLegacyName: String?
-    get() = if (this == null) null else CraftItemStack.unwrap(this).customLegacyName
-
 fun ItemStack?.checkName(name: String): Boolean = checkNames(name)
 
 fun ItemStack?.checkNames(vararg names: String): Boolean {
-    val currentName = customLegacyName ?: return false
+    if (this == null || isEmpty) return false
+    val meta = itemMeta ?: return false
+    if (!meta.hasDisplayName()) return false
+    val currentName = meta.displayName
+
+    // 性能优化：在外层只进行一次转换，避免在 any 循环里反复解析已经转换过的 name
     return names.any { currentName.equals(it.bukkit.trim(), ignoreCase = true) }
 }
 
@@ -112,8 +101,11 @@ fun Entity.checkMainHand(vararg name: String): Boolean {
     return mainHand.checkNames(*name)
 }
 
-fun checkItemDisplayName(item: ItemStack?, display: String): Boolean =
-    item.customLegacyName?.equals(display, ignoreCase = true) == true
+fun checkItemDisplayName(item: ItemStack?, display: String): Boolean {
+    if (item == null || item.isEmpty) return false
+    val meta = item.itemMeta ?: return false
+    return meta.hasDisplayName() && meta.displayName.equals(display, ignoreCase = true)
+}
 
 fun JavaPlugin.registerEvents(listener: Listener) {
     server.pluginManager.registerEvents(listener, this)
