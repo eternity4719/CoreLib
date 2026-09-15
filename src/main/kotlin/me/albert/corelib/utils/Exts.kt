@@ -71,11 +71,6 @@ fun Entity.removeIfValid(): Boolean {
     return false
 }
 
-fun ItemStack?.isSame(other: ItemStack?): Boolean {
-    return this?.isSimilar(other) == true && this.amount == other?.amount
-}
-
-
 val ItemStack?.isNull: Boolean
     get() = this == null || this.isEmpty
 
