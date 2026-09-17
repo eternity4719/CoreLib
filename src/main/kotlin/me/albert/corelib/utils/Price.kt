@@ -2,6 +2,7 @@ package me.albert.corelib.utils
 
 import java.math.RoundingMode
 import java.text.DecimalFormat
+import kotlin.math.abs
 
 // DecimalFormat 非线程安全，故每次访问都新建实例，不能缓存为常量
 val priceFormat
@@ -15,17 +16,17 @@ fun Double.format(format: DecimalFormat = priceFormat): String = format.format(t
 /** 数量级中文单位；按绝对值判断(负数同档)，超出「十亿」档与不足「百」档均返回空串 */
 val Double.unit: String
     get() {
-        val abs = kotlin.math.abs(this)
+        val v = abs(this)
         return when {
-            abs >= 1e10 -> ""
-            abs >= 1e9 -> "十亿"
-            abs >= 1e8 -> "亿"
-            abs >= 1e7 -> "千万"
-            abs >= 1e6 -> "百万"
-            abs >= 1e5 -> "十万"
-            abs >= 1e4 -> "万"
-            abs >= 1e3 -> "千"
-            abs >= 1e2 -> "百"
+            v >= 1e10 -> ""
+            v >= 1e9 -> "十亿"
+            v >= 1e8 -> "亿"
+            v >= 1e7 -> "千万"
+            v >= 1e6 -> "百万"
+            v >= 1e5 -> "十万"
+            v >= 1e4 -> "万"
+            v >= 1e3 -> "千"
+            v >= 1e2 -> "百"
             else -> ""
         }
     }
