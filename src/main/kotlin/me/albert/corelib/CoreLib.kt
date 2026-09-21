@@ -10,10 +10,13 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.plugin.java.JavaPlugin
 
-lateinit var instance: CoreLib
+// internal:只有 corelib 自己能引用,别的插件误 import 直接编译报错(各插件的 instance 同此)
+internal lateinit var instance: CoreLib
 val server get() = instance.server
-val debug = false
-val logger get() = instance.logger
+internal val debug = false
+// @PublishedApi:公开内联函数(Exts.guarded)要用它;对外部 Kotlin 代码仍不可见
+@PublishedApi
+internal val logger get() = instance.logger
 
 
 class CoreLib : JavaPlugin() {

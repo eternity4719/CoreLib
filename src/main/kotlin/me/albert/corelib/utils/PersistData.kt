@@ -6,6 +6,9 @@ import org.bukkit.NamespacedKey
 import org.bukkit.persistence.PersistentDataHolder
 import org.bukkit.persistence.PersistentDataType
 
+/** corelib 命名空间下的 PDC 键:本文件的 `holder["k"]` 一族全用它,外部要直接读 NMS 方块实体 PDC 时也拿它拼键 */
+fun pdcKey(name: String) = NamespacedKey(instance, name)
+
 /**
  * 内部私有工具：获取类型匹配
  */
@@ -35,7 +38,7 @@ internal inline fun <reified T : Any> getPdcType(): PersistentDataType<*, T> {
  * 如果传入 null，则自动删除该键
  */
 inline operator fun <reified T : Any> PersistentDataHolder.set(keyStr: String, value: T?) {
-    val key = NamespacedKey(instance, keyStr)
+    val key = pdcKey(keyStr)
     if (value == null) {
         this.persistentDataContainer.remove(key)
     } else {
@@ -50,7 +53,7 @@ inline operator fun <reified T : Any> PersistentDataViewHolder?.get(keyStr: Stri
     if (this == null) {
         return null
     }
-    val key = NamespacedKey(instance, keyStr)
+    val key = pdcKey(keyStr)
     return this.persistentDataContainer.get(key, getPdcType<T>())
 }
 
@@ -61,12 +64,12 @@ fun PersistentDataViewHolder?.hasPD(keyStr: String): Boolean {
     if (this == null) {
         return false
     }
-    return this.persistentDataContainer.has(NamespacedKey(instance, keyStr))
+    return this.persistentDataContainer.has(pdcKey(keyStr))
 }
 
 /**
  * 扩展方法：删除某个键
  */
 fun PersistentDataHolder.removePD(keyStr: String) {
-    this.persistentDataContainer.remove(NamespacedKey(instance, keyStr))
+    this.persistentDataContainer.remove(pdcKey(keyStr))
 }
