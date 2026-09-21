@@ -20,9 +20,13 @@ import org.bukkit.event.HandlerList
  * 触发、或异步事件从 tick 线程触发都直接抛异常;Folia 系的 `isPrimaryThread` 对任意区域线程都为 true。
  *
  * 用法:发送 `DataEvent("spirit.count", mapOf("player" to name, "key" to "low")).callEvent()`;
- * 接收在普通 `@EventHandler` 里先按 [channel] 过滤再取字段。
+ * 接收在普通 `@EventHandler` 里先按 [channel] 过滤,再 `val player: String = event["player"]` 取字段。
  */
 class DataEvent(val channel: String, val data: Map<String, Any>) : Event(!Bukkit.isPrimaryThread()) {
+
+    /** 按 [key] 取字段并转成期望类型(由接收变量的声明推断);缺失或类型不符直接抛,两插件约定不一致属于 bug,让它在日志里炸出来 */
+    inline operator fun <reified T> get(key: String): T =
+        data[key] as? T ?: error("DataEvent[$channel] 字段 $key 缺失或不是 ${T::class.simpleName}")
 
     override fun getHandlers() = HANDLERS
 
