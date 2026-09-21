@@ -2,7 +2,10 @@ package me.albert.corelib.utils
 
 import org.bukkit.Bukkit
 import org.bukkit.event.Event
+import org.bukkit.event.EventPriority
 import org.bukkit.event.HandlerList
+import org.bukkit.event.Listener
+import org.bukkit.plugin.Plugin
 
 /**
  * 跨插件传数据的通用事件。线上各插件经常各自单独 PlugManX reload,任何两个插件之间共享的类
@@ -20,7 +23,7 @@ import org.bukkit.event.HandlerList
  * 触发、或异步事件从 tick 线程触发都直接抛异常;Folia 系的 `isPrimaryThread` 对任意区域线程都为 true。
  *
  * 用法:发送 `DataEvent("spirit.count", mapOf("player" to name, "key" to "low")).callEvent()`;
- * 接收在普通 `@EventHandler` 里先按 [channel] 过滤,再 `val player: String = event["player"]` 取字段。
+ * 接收 `plugin.subscribe("spirit.count") { val player: String = it["player"] }`(见 [subscribe])。
  */
 class DataEvent(val channel: String, val data: Map<String, Any>) : Event(!Bukkit.isPrimaryThread()) {
 
@@ -37,4 +40,16 @@ class DataEvent(val channel: String, val data: Map<String, Any>) : Event(!Bukkit
         @JvmStatic
         fun getHandlerList() = HANDLERS
     }
+}
+
+/**
+ * 订阅 [channel] 通道的 [DataEvent]:注册一个只认这个通道的 Bukkit 监听器,归属本插件,
+ * 插件禁用时随 `HandlerList.unregisterAll(plugin)` 一起摘掉,不用自己管生命周期。
+ */
+fun Plugin.subscribe(channel: String, priority: EventPriority = EventPriority.NORMAL, handler: (DataEvent) -> Unit) {
+    server.pluginManager.registerEvent(DataEvent::class.java, object : Listener {}, priority, { _, event ->
+        event as DataEvent
+        if (event.channel != channel) return@registerEvent
+        handler(event)
+    }, this)
 }
