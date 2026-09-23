@@ -22,7 +22,7 @@ fun Inventory.removeItems(item: ItemStack, amount: Int) {
         if (remaining <= 0) break
         if (stack != null && stack.isSimilar(template)) {
             val take = minOf(stack.amount, remaining)
-            stack.amount -= take
+            stack.subtract(take)
             remaining -= take
         }
     }
@@ -60,7 +60,7 @@ fun Inventory.takeRandomStack(): ItemStack {
     val items = storageContents.filterNotNull().filter { !it.isEmpty }
     val stack = items.random()
     val result = stack.asOne()
-    stack.amount -= 1
+    stack.subtract()
     return result
 }
 
