@@ -46,6 +46,7 @@ class GuiHolder(title: String, size: Int) : InventoryHolder {
     var allowInteract = false
     var onClick: ((InventoryClickEvent) -> Unit)? = null
     var onItemClick: ((InventoryClickEvent) -> Unit)? = null
+    var onBottomClick: ((InventoryClickEvent) -> Unit)? = null
     var onOpen: ((InventoryOpenEvent) -> Unit)? = null
 
     /**
@@ -64,6 +65,11 @@ class GuiHolder(title: String, size: Int) : InventoryHolder {
 
     fun onItemClick(listener: (InventoryClickEvent) -> Unit) {
         onItemClick = listener
+    }
+
+    /** 点了下半的玩家背包(非空格才回调);是否取消仍按 [allowInteract] */
+    fun onBottomClick(listener: (InventoryClickEvent) -> Unit) {
+        onBottomClick = listener
     }
 
     fun onOpen(listener: (InventoryOpenEvent) -> Unit) {
@@ -111,7 +117,13 @@ class GuiManager(plugin: JavaPlugin) : Listener {
             event.isCancelled = true
         }
 
-        if (event.clickedInventory?.holder !is GuiHolder) {
+        val clicked = event.clickedInventory ?: return
+        // 点下去那一刻格子里有没有东西; 先取好, 别让下面格子回调改了界面后再读到新内容
+        val hasItem = !event.currentItem.isNull
+        if (clicked.holder !is GuiHolder) {
+            if (hasItem) {
+                holder.onBottomClick?.invoke(event)
+            }
             return
         }
 
@@ -121,7 +133,7 @@ class GuiManager(plugin: JavaPlugin) : Listener {
             event.isCancelled = true
             guiItem.onClick?.invoke(event) // 执行自定义逻辑
         }
-        if (!event.currentItem.isNull) {
+        if (hasItem) {
             holder.onItemClick?.invoke(event)
         }
         holder.onClick?.invoke(event)
