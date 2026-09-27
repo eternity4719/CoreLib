@@ -44,14 +44,13 @@ object ItemUtil {
     ): ItemStack = make(item, name, lore.toList())
 
     /**
-     * 追加 Lore 列表
-     * 优化点：仅获取一次 itemMeta，原地操作集合
+     * 追加 Lore 列表(& / § 色码、MiniMessage 都认)。
+     * 按组件追加、原有 lore 不动:以前整段转 legacy 再写回, Paper 转 legacy 只看每段自己的样式,
+     * MiniMessage 写的 lore 挂在父节点上的颜色全丢, 显示成默认紫色
      */
     fun addLore(item: ItemStack, lore: List<String>): ItemStack = item.apply {
         editMeta { meta ->
-            val currentLore = meta.lore ?: ArrayList()
-            currentLore.addAll(lore)
-            meta.lore = currentLore.map { it?.bukkit }
+            meta.lore((meta.lore() ?: emptyList()) + lore.map { it.rBukkit.comp })
         }
     }
 
